@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo Digital Lumiline</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <!-- jsPDF Libraries for PDF Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .whatsapp-button {
+            transition: transform 0.2s ease-in-out;
+        }
+        .whatsapp-button:hover {
+            transform: scale(1.05);
+        }
+        /* Custom scrollbar for better aesthetics */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        .product-card {
+             transition: all 0.3s ease;
+             border: 1px solid #e5e7eb; /* Add a subtle border */
+        }
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            border-color: #3b82f6; /* Highlight border on hover */
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <!-- Container Principal -->
+    <div class="container mx-auto p-4 md:p-8">
+
+        <!-- Cabeçalho -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-800">LUMILINE</h1>
+            <p class="text-lg text-gray-600 mt-2">Catálogo Digital de Perfis de LED</p>
+        </header>
+
+        <!-- Barra de Busca -->
+        <div class="mb-8 max-w-2xl mx-auto">
+            <div class="relative">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                    <i class="fas fa-search text-gray-400"></i>
+                </span>
+                <input type="text" id="searchInput" placeholder="Buscar por nome ou código..." class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+        </div>
+
+        <!-- Grid de Produtos -->
+        <div id="productGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <!-- Os cards de produtos serão inseridos aqui via JS -->
+        </div>
+
+        <!-- Carrinho de Orçamento Flutuante -->
+        <div id="cart-button" class="fixed bottom-8 right-8 cursor-pointer z-50">
+             <div class="relative">
+                <div class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center shadow-lg whatsapp-button">
+                    <i class="fas fa-shopping-cart text-white text-2xl"></i>
+                </div>
+                <span id="cart-count" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center border-2 border-white">0</span>
+            </div>
+        </div>
+
+        <!-- Modal do Carrinho de Orçamento -->
+        <div id="cart-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-lg shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+                <!-- Cabeçalho do Modal -->
+                <div class="flex justify-between items-center p-5 border-b">
+                    <h2 class="text-2xl font-semibold text-gray-800">Carrinho de Orçamento</h2>
+                    <button id="close-modal" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+                </div>
+
+                <!-- Itens do Carrinho -->
+                <div id="cart-items" class="p-5 flex-grow overflow-y-auto custom-scrollbar">
+                    <!-- Itens do carrinho serão inseridos aqui -->
+                     <p class="text-gray-500 text-center">Seu carrinho está vazio.</p>
+                </div>
+
+                <!-- Rodapé do Modal -->
+                <div class="p-5 border-t bg-gray-50 rounded-b-lg">
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-lg font-medium text-gray-600">Total do Pedido:</span>
+                        <span id="cart-total" class="text-2xl font-bold text-gray-900">R$ 0,00</span>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <button id="download-pdf" class="w-full bg-red-500 text-white py-3 px-4 rounded-lg flex items-center justify-center text-lg font-semibold hover:bg-red-600 transition duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed">
+                            <i class="fas fa-file-pdf mr-3"></i>Baixar PDF
+                        </button>
+                        <button id="whatsapp-checkout" class="w-full bg-green-500 text-white py-3 px-4 rounded-lg flex items-center justify-center text-lg font-semibold hover:bg-green-600 transition duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed">
+                            <i class="fab fa-whatsapp mr-3"></i>Solicitar Orçamento
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+         <!-- Mensagem de Produto Adicionado -->
+        <div id="toast-notification" class="fixed top-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg opacity-0 transform -translate-y-10 transition-all duration-300">
+            <p><i class="fas fa-check-circle mr-2"></i>Produto adicionado ao carrinho!</p>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Lista completa de produtos com preços atualizados (desconto de 55% aplicado)
+            const products = [
+               { id: 'L0001', name: 'PERFIL LED ALUM. SOBREPOR BRANCO 2M 14X6.5', price: 18.85, image: 'assents/L0001.png' },
+                { id: 'L0002', name: 'PERFIL LED ALUM. SOBREPOR PRETO 2M 14X6.5', price: 20.95, image: 'assents/L0002.png' },
+                { id: 'L0003', name: 'PERFIL LED ALUM. SOBREPOR BRANCO 3M 14X6.5', price: 28.28, image: 'assents/L0003.png' },
+                { id: 'L0004', name: 'PERFIL LED ALUM. SOBREPOR PRETO 3M 14X6.5', price: 31.42, image: 'assents/L0004.png' },
+                { id: 'L0005', name: 'PERFIL LED ALUM. EMBUTIR BRANCO 2M 17.2X6.5', price: 19.83, image: 'assents/L0005.png' },
+                { id: 'L0006', name: 'PERFIL LED ALUM. EMBUTIR PRETO 2M 17.2X6.5', price: 22.04, image: 'assents/L0006.png' },
+                { id: 'L0007', name: 'PERFIL LED ALUM. EMBUTIR BRANCO 3M 17.2X6.5', price: 29.76, image: 'assents/L0007.png' },
+                { id: 'L0008', name: 'PERFIL LED ALUM. EMBUTIR PRETO 3M 17.2X6.5', price: 33.07, image: 'assents/L0008.png' },
+                { id: 'L0009', name: 'PERFIL LED ALUM. SOBREPOR BRANCO 2M 29.4X9.9', price: 34.35, image: 'assents/L0009.png' },
+                { id: 'L0010', name: 'PERFIL LED ALUM. SOBREPOR PRETO 2M 29.4X9.9', price: 38.17, image: 'assents/L0010.png' },
+                { id: 'L0011', name: 'PERFIL LED ALUM. SOBREPOR BRANCO 3M 29.4X9.9', price: 51.53, image: 'assents/L0011.png' },
+                { id: 'L0012', name: 'PERFIL LED ALUM. SOBREPOR PRETO 3M 29.4X9.9', price: 57.25, image: 'assents/L0012.png' },
+                { id: 'L0013', name: 'PERFIL LED ALUM. EMBUTIR BRANCO 2M 40x9.9', price: 36.15, image: 'assents/L0013.png' },
+                { id: 'L0014', name: 'PERFIL LED ALUM. EMBUTIR PRETO 2M 40x9.9', price: 40.16, image: 'assents/L0014.png' },
+                { id: 'L0015', name: 'PERFIL LED ALUM. EMBUTIR BRANCO 3M 40x9.9', price: 54.23, image: 'assents/L0015.png' },
+                { id: 'L0016', name: 'PERFIL LED ALUM. EMBUTIR PRETO 3M 40x9.9', price: 60.25, image: 'assents/L0016.png' },
+                { id: 'L0017', name: 'PERFIL LED ALUM. SOBREPOR RODA TETO DOIS FACHOS BRANCO. 2M 68.7X68.7', price: 199.61, image: 'assents/L0017.png' },
+                { id: 'L0018', name: 'PERFIL LED ALUM. SOBREPOR RODA TETO DOIS FACHOS BRANCO. 3M 68.7X68.7', price: 297.50, image: 'assents/L0018.png' },
+                { id: 'L0019', name: 'PERFIL LED ALUM. EMBUTIR RECUADO BRANCO 2M 35.6X22.9', price: 57.10, image: 'assents/L0019.png' },
+                { id: 'L0020', name: 'PERFIL LED ALUM. EMBUTIR RECUADO PRETO 2M 35.6X22.9', price: 63.44, image: 'assents/L0020.png' },
+                { id: 'L0021', name: 'PERFIL LED ALUM. EMBUTIR RECUADO BRANCO 3M 35.6X22.9', price: 85.65, image: 'assents/L0021.png' },
+                { id: 'L0022', name: 'PERFIL LED ALUM. EMBUTIR RECUADO PRETO 3M 35.6X22.9', price: 95.16, image: 'assents/L0022.png' },
+                { id: 'L0023', name: 'PERFIL LED ALUM. EMBUTIR RECUADO BRANCO 2M 24.2X14.2', price: 32.94, image: 'assents/L0023.png' },
+                { id: 'L0024', name: 'PERFIL LED ALUM. EMBUTIR RECUADO PRETO 2M 24.2X14.2', price: 36.59, image: 'assents/L0024.png' },
+                { id: 'L0025', name: 'PERFIL LED ALUM. EMBUTIR RECUADO BRANCO 3M 24.2X14.2', price: 49.41, image: 'assents/L0025.png' },
+                { id: 'L0026', name: 'PERFIL LED ALUM. EMBUTIR RECUADO PRETO 3M 24.2X14.2', price: 54.89, image: 'assents/L0026.png' },
+                { id: 'L0027', name: 'PERFIL LED ALUM. SOBREPOR BRANCO 2M 35X35', price: 108.80, image: 'assents/L0027.png' },
+                { id: 'L0028', name: 'PERFIL LED ALUM. SOBREPOR PRETO 2M 35X35', price: 120.88, image: 'assents/L0028.png' },
+                { id: 'L0029', name: 'PERFIL LED ALUM. SOBREPOR BRANCO 3M 35X35', price: 163.21, image: 'assents/L0029.png' },
+                { id: 'L0030', name: 'PERFIL LED ALUM. SOBREPOR PRETO 3M 35X35', price: 181.33, image: 'assents/L0030.png' },
+                { id: 'L0031', name: 'PERFIL LED ALUM. EMBUTIR BRANCO 2M 50.4X35', price: 112.60, image: 'assents/L0031.png' },
+                { id: 'L0032', name: 'PERFIL LED ALUM. EMBUTIR PRETO 2M 50.4X35', price: 125.12, image: 'assents/L0032.png' },
+                { id: 'L0033', name: 'PERFIL LED ALUM. EMBUTIR BRANCO 3M 50.4X35', price: 168.91, image: 'assents/L0033.png' },
+                { id: 'L0034', name: 'PERFIL LED ALUM. EMBUTIR PRETO 3M 50.4X35', price: 187.68, image: 'assents/L0034.png' },
+                { id: 'L0035', name: 'PERFIL LED ALUM. EMBUTIR PISO PRATA 2M 20X15', price: 71.91, image: 'assents/L0035.png' },
+                { id: 'L0036', name: 'PERFIL LED ALUM. EMBUTIR PISO PRATA 3M 20X15', price: 107.70, image: 'assents/L0036.png' },
+                { id: 'L0037', name: 'PERFIL LED ALUM. EMBUTIR BRANCO 2M 65X34.7', price: 130.72, image: 'assents/L0037.png' },
+                { id: 'L0038', name: 'PERFIL LED ALUM. EMBUTIR PRETO 2M 65X34.7', price: 145.24, image: 'assents/L0038.png' },
+                { id: 'L0039', name: 'PERFIL LED ALUM. EMBUTIR BRANCO 3M 65X34.7', price: 196.09, image: 'assents/L0039.png' },
+                { id: 'L0040', name: 'PERFIL LED ALUM. EMBUTIR PRETO 3M 65X34.7', price: 217.88, image: 'assents/L0040.png' },
+                { id: 'L0041', name: 'PERFIL LED ALUM. SOBREPOR BRANCO 2M 50X34.7', price: 130.41, image: 'assents/L0041.png' },
+                { id: 'L0042', name: 'PERFIL LED ALUM. SOBREPOR PRETO 2M 50X34.7', price: 144.89, image: 'assents/L0042.png' },
+                { id: 'L0043', name: 'PERFIL LED ALUM. SOBREPOR BRANCO 3M 50X34.7', price: 195.89, image: 'assents/L0043.png' },
+                { id: 'L0044', name: 'PERFIL LED ALUM. SOBREPOR PRETO 3M 50X34.7', price: 217.65, image: 'assents/L0044.png' },
+                { id: 'L0045', name: 'PERFIL LED ALUM. EMBUTIR BRANCO 2M 30.2X9.6', price: 21.65, image: 'assents/L0045.png' },
+                { id: 'L0046', name: 'PERFIL LED ALUM. EMBUTIR PRETO 2M 30.2X9.6', price: 24.01, image: 'assents/L0046.png' },
+                { id: 'L0047', name: 'PERFIL LED ALUM. EMBUTIR BRANCO 3M 30.2X9.6', price: 32.48, image: 'assents/L0047.png' },
+                { id: 'L0048', name: 'PERFIL LED ALUM. EMBUTIR PRETO 3M 30.2X9.6', price: 32.67, image: 'assents/L0048.png' },
+                { id: 'L0049', name: 'PERFIL LED ALUM. SOBREPOR BRANCO 2M 22.8X9.6', price: 19.73, image: 'assents/L0049.png' },
+                { id: 'L0050', name: 'PERFIL LED ALUM. SOBREPOR PRETO 2M 22.8X9.6', price: 21.92, image: 'assents/L0050.png' },
+                { id: 'L0051', name: 'PERFIL LED ALUM. SOBREPOR BRANCO 3M 22.8X9.6', price: 29.59, image: 'assents/L0051.png' },
+                { id: 'L0052', name: 'PERFIL LED ALUM. SOBREPOR PRETO 3M 22.8X9.6', price: 33.00, image: 'assents/L0052.png' },
+                { id: 'L0053', name: 'PER. LED ALUM. SOBRE. E PENDENTE BRAF. 2M 23X26.7', price: 49.28, image: 'assents/L0053.png' },
+                { id: 'L0054', name: 'PER. LED ALUM. SOBRE. E PENDENTE PREF. 2M 23X26.7', price: 54.76, image: 'assents/L0054.png' },
+                { id: 'L0055', name: 'PER. LED ALUM. SOBRE. E PENDENTE BRAF. 3M 23X26.7', price: 73.91, image: 'assents/L0055.png' },
+                { id: 'L0056', name: 'PER. LED ALUM. SOBRE. E PENDente PREF. 3M 23X26.7', price: 82.13, image: 'assents/L0056.png' },
+                { id: 'L0057', name: 'PERFIL LED ALUM. EMBUTIR BRANCO 2M 36X26.7', price: 57.22, image: 'assents/L0057.png' },
+                { id: 'L0058', name: 'PERFIL LED ALUM. EMBUTIR PRETO 2M 36X26.7', price: 63.58, image: 'assents/L0058.png' },
+                { id: 'L0059', name: 'PERFIL LED ALUM. EMBUTIR BRANCO 3M 36X26.7', price: 85.84, image: 'assents/L0059.png' },
+                { id: 'L0060', name: 'PERFIL LED ALUM. EMBUTIR PRETO 3M 36X26.7', price: 95.37, image: 'assents/L0060.png' },
+                { id: 'L0061', name: 'PERFIL LED ALUM. SOBREPOR BRANCO 2M 7.8X9', price: 15.61, image: 'assents/L0061.png' },
+                { id: 'L0062', name: 'PERFIL LED ALUM. SOBREPOR PRETO 2M 7.8X9', price: 17.35, image: 'assents/L0062.png' },
+                { id: 'L0063', name: 'PERFIL LED ALUM. SOBREPOR BRANCO 3M 7.8X9', price: 23.43, image: 'assents/L0063.png' },
+                { id: 'L0064', name: 'PERFIL LED ALUM. SOBREPOR PRETO 3M 7.8X9', price: 28.63, image: 'assents/L0064.png' },
+                { id: 'L0065', name: 'PERFIL LED ALUM. EMBUTIR BRANCO 2M 11.2X9', price: 16.70, image: 'assents/L0065.png' },
+                { id: 'L0066', name: 'PERFIL LED ALUM. EMBUTIR PRETO 2M 11.2X9', price: 18.56, image: 'assents/L0066.png' },
+                { id: 'L0067', name: 'PERFIL LED ALUM. EMBUTIR BRANCO 3M 11.2X9', price: 25.05, image: 'assents/L0067.png' },
+                { id: 'L0068', name: 'PERFIL LED ALUM. EMBUTIR PRETO 3M 11.2X9', price: 27.84, image: 'assents/L0068.png' },
+                { id: 'L0069', name: 'PERFIL LED ALUM. SOBREPOR BRANCO 2M 9.6X12.8', price: 20.18, image: 'assents/L0069.png' },
+                { id: 'L0070', name: 'PERFIL LED ALUM. SOBREPOR PRETO 2M 9.6X12.8', price: 22.40, image: 'assents/L0070.png' },
+                { id: 'L0071', name: 'PERFIL LED ALUM. SOBREPOR BRANCO 3M 9.6X12.8', price: 30.25, image: 'assents/L0071.png' },
+                { id: 'L0072', name: 'PERFIL LED ALUM. SOBREPOR PRETO 3M 9.6X12.8', price: 33.61, image: 'assents/L0072.png' },
+                { id: 'L0073', name: 'PERFIL LED ALUM. EMBUTIR BRANCO 2M 13.5X12.8', price: 22.84, image: 'assents/L0073.png' },
+                { id: 'L0074', name: 'PERFIL LED ALUM. EMBUTIR PRETO 2M 13.5X12.8', price: 25.38, image: 'assents/L0074.png' },
+                { id: 'L0075', name: 'PERFIL LED ALUM. EMBUTIR BRANCO 3M 13.5X12.8', price: 34.27, image: 'assents/L0075.png' },
+                { id: 'L0076', name: 'PERFIL LED ALUM. EMBUTIR PRETO 3M 13.5X12.8', price: 38.07, image: 'assents/L0076.png' },
+                { id: 'L0077', name: 'PER. LED ALUM. TRIFACE COM ILUMINACAO BRAF. 2M 20X20.8', price: 62.42, image: 'assents/L0077.png' },
+                { id: 'L0078', name: 'PER. LED ALUM. TRIFACE COM ILUMINACAO PREF. 2M 20X20.8', price: 68.66, image: 'assents/L0078.png' },
+                { id: 'L0079', name: 'PER. LED ALUM. TRIFACE COM ILUMINACAO BRAF. 3M 20X20.8', price: 93.62, image: 'assents/L0079.png' },
+                { id: 'L0080', name: 'PER. LED ALUM. TRIFACE COM ILUMINACAO PREF. 3M 20X20.8', price: 104.02, image: 'assents/L0080.png' },
+                { id: 'L0081', name: 'PERFIL LED ALUM. EMBUTIR BRANCO 2M 23.8X6.5', price: 14.73, image: 'assents/L0081.png' },
+                { id: 'L0082', name: 'PERFIL LED ALUM. EMBUTIR PRETO 2M 23.8X6.5', price: 16.24, image: 'assents/L0082.png' },
+                { id: 'L0083', name: 'PERFIL LED ALUM. EMBUTIR BRANCO 3M 23.8X6.5', price: 22.04, image: 'assents/L0083.png' },
+                { id: 'L0084', name: 'PERFIL LED ALUM. EMBUTIR PRETO 3M 23.8X6.5', price: 24.35, image: 'assents/L0084.png' },
+                { id: 'L0085', name: 'PERFIL LED ALUM. SOBREPOR BRANCO 2M 17.4X6.5', price: 13.92, image: 'assents/L0085.png' },
+                { id: 'L0086', name: 'PERFIL LED ALUM. SOBREPOR PRETO 2M 17.4X6.5', price: 15.31, image: 'assents/L0086.png' },
+                { id: 'L0087', name: 'PERFIL LED ALUM. SOBREPOR BRANCO 3M 17.4X6.5', price: 20.88, image: 'assents/L0087.png' },
+                { id: 'L0088', name: 'PERFIL LED ALUM. SOBREPOR PRETO 3M 17.4X6.5', price: 22.96, image: 'assents/L0088.png' },
+                { id: 'L0089', name: 'PERFIL LED ALUM. EMBUTIR BRANCO 2M 23X6.7', price: 20.18, image: 'assents/L0089.png' },
+                { id: 'L0090', name: 'PERFIL LED ALUM. EMBUTIR PRETO 2M 23X6.7', price: 22.42, image: 'assents/L0090.png' },
+                { id: 'L0091', name: 'PERFIL LED ALUM. EMBUTIR BRANCO 3M 23X6.7', price: 30.27, image: 'assents/L0091.png' },
+                { id: 'L0092', name: 'PERFIL LED ALUM. EMBUTIR PRETO 3M 23X6.6', price: 33.63, image: 'assents/L0092.png' },
+                { id: 'L0093', name: 'PERFIL LED ALUM. SOBREPOR BRANCO 2M 15.8X6.6', price: 18.45, image: 'assents/L0093.png' },
+                { id: 'L0094', name: 'PERFIL LED ALUM. SOBREPOR PRETO 2M 15.8X6.6', price: 20.51, image: 'assents/L0094.png' },
+                { id: 'L0095', name: 'PERFIL LED ALUM. SOBREPOR BRANCO 3M 15.8X6.6', price: 27.67, image: 'assents/L0095.png' },
+                { id: 'L0096', name: 'PERFIL LED ALUM. SOBREPOR PRETO 3M 15.8X6.6', price: 30.74, image: 'assents/L0096.png' },
+                { id: 'L0097', name: 'PERFIL LED ALUM. EMBUTIR BRANCO 2M 24.2X14.2', price: 17.00, image: 'assents/L0097.png' },
+                { id: 'L0098', name: 'PERFIL LED ALUM. EMBUTIR PRETO 2M 24.2X14.2', price: 18.94, image: 'assents/L0098.png' },
+                { id: 'L0099', name: 'PERFIL LED ALUM. EMBUTIR BRANCO 3M 24.2X14.2', price: 25.52, image: 'assents/L0099.png' },
+                { id: 'L0100', name: 'PERFIL LED ALUM. EMBUTIR PRETO 3M 24.2X14.2', price: 28.41, image: 'assents/L0100.png' },
+                { id: 'L0101', name: 'PERFIL LED ALUM. SOBREPOR BRANCO 2M 16.7X13.5', price: 17.40, image: 'assents/L0101.png' },
+                { id: 'L0102', name: 'PERFIL LED ALUM. SOBREPOR PRETO 2M 16.7X13.5', price: 18.94, image: 'assents/L0102.png' },
+                { id: 'L0103', name: 'PERFIL LED ALUM. SOBREPOR BRANCO 3M 16.7X13.5', price: 26.68, image: 'assents/L0103.png' },
+                { id: 'L0104', name: 'PERFIL LED ALUM. SOBREPOR PRETO 3M 16.7X13.5', price: 28.41, image: 'assents/L0104.png' },
+                { id: 'L0105', name: 'PERFIL LED ALUM. EMBUTIR BRANCO 2M 24.2X18', price: 27.84, image: 'assents/L0105.png' },
+                { id: 'L0106', name: 'PERFIL LED ALUM. EMBUTIR PRETO 2M 24.2X18', price: 30.96, image: 'assents/L0106.png' },
+                { id: 'L0107', name: 'PERFIL LED ALUM. EMBUTIR BRANCO 3M 24.2X18', price: 41.67, image: 'assents/L0107.png' },
+                { id: 'L0108', name: 'PERFIL LED ALUM. EMBUTIR PRETO 3M 24.2X18', price: 46.39, image: 'assents/L0108.png' },
+                { id: 'L0109', name: 'PER. LED ALUM. SOBRE. CANTO EM V BRAF. 2M 15.4X15.4', price: 14.30, image: 'assents/L0109.png' },
+                { id: 'L0110', name: 'PER. LED ALUM. SOBRE. CANTO EM V PREF. 2M 15.4X15.4', price: 15.90, image: 'assents/L0110.png' },
+                { id: 'L0111', name: 'PER. LED ALUM. SOBRE. CANTO EM V BRAF. 3M 15.4X15.4', price: 21.46, image: 'assents/L0111.png' },
+                { id: 'L0112', name: 'PER. LED ALUM. SOBRE. CANTO EM V PREF. 3M 15.4X15.4', price: 23.85, image: 'assents/L0112.png' },
+                { id: 'L0113', name: 'PERFIL LED ALUM. SOBREPOR BRANCO 2M 19.6*9.6', price: 20.88, image: 'assents/L0113.png' },
+                { id: 'L0114', name: 'PERFIL LED ALUM. SOBREPOR PRETO 2M 19.6*9.6', price: 23.20, image: 'assents/L0114.png' },
+                { id: 'L0115', name: 'PERFIL LED ALUM. SOBREPOR BRANCO 3M 19.6*9.6', price: 31.32, image: 'assents/L0115.png' },
+                { id: 'L0116', name: 'PERFIL LED ALUM. SOBREPOR PRETO 3M 19.6*9.6', price: 34.79, image: 'assents/L0116.png' },
+                { id: 'L0117', name: 'PERFIL LED ALUM. EMBUTIR BRANCO 2M 28X9.6', price: 22.58, image: 'assents/L0117.png' },
+                { id: 'L0118', name: 'PERFIL LED ALUM. EMBUTIR PRETO 2M 28X9.6', price: 25.10, image: 'assents/L0118.png' },
+                { id: 'L0119', name: 'PERFIL LED ALUM. EMBUTIR BRANCO 3M 28X9.6', price: 33.88, image: 'assents/L0119.png' },
+                { id: 'L0120', name: 'PERFIL LED ALUM. EMBUTIR PRETO 3M 28X9.6', price: 37.63, image: 'assents/L0120.png' },
+                { id: 'L0121', name: 'PERFIL LED ALUM. SOBREPOR BRANCO 2M 20X15', price: 34.79, image: 'assents/L0121.png' },
+                { id: 'L0122', name: 'PERFIL LED ALUM. SOBREPOR PRETO 2M 20X15', price: 38.54, image: 'assents/L0122.png' },
+                { id: 'L0123', name: 'PERFIL LED ALUM. SOBREPOR BRANCO 3M 20X15', price: 52.04, image: 'assents/L0123.png' },
+                { id: 'L0124', name: 'PERFIL LED ALUM. SOBREPOR PRETO 3M 20X15', price: 57.82, image: 'assents/L0124.png' },
+                { id: 'L0125', name: 'PERFIL LED ALUM. EMBUTIR BRANCO 2M 26.8X15', price: 36.74, image: 'assents/L0125.png' },
+                { id: 'L0126', name: 'PERFIL LED ALUM. EMBUTIR PRETO 2M 26.8X15', price: 40.82, image: 'assents/L0126.png' },
+                { id: 'L0127', name: 'PERFIL LED ALUM. EMBUTIR BRANCO 3M 26.8X15', price: 55.11, image: 'assents/L0127.png' },
+                { id: 'L0128', name: 'PERFIL LED ALUM. EMBUTIR PRETO 3M 26.8X15', price: 61.24, image: 'assents/L0128.png' },
+                { id: 'L0129', name: 'PER. LED ALUM. SOBRE. TROVAO DOIS FACHOS BRAF. 2M 70X40', price: 193.34, image: 'assents/L0129.png' },
+                { id: 'L0130', name: 'PER. LED ALUM. SOBRE. TROVAO DOIS FACHOS PREF. 2M 70X40', price: 212.82, image: 'assents/L0130.png' },
+                { id: 'L0131', name: 'PER. LED ALUM. SOBRE. TROVAO DOIS FACHOS BRAF. 3M 70X40', price: 289.95, image: 'assents/L0131.png' },
+                { id: 'L0132', name: 'PER. LED ALUM. SOBRE. TROVAO DOIS FACHOS PREF. 3M 70X40', price: 319.18, image: 'assents/L0132.png' },
+                { id: 'L0133', name: 'PER. LED ALUM. EMBUT. NO FRAME DUPLO (GAP) BRAF. 2M 115.2X42', price: 162.37, image: 'assents/L0133.png' },
+                { id: 'L0135', name: 'PER. LED ALUM. EMBUT. NO FRAME DUPLO (GAP) BRAF. 3M 115.2X42', price: 255.15, image: 'assents/L0135.png' },
+                { id: 'L0137', name: 'PER. LED ALUM. EMBUT. NO FRAME SIMPLES (GAP) BRAF. 2M 84X39', price: 117.14, image: 'assents/L0137.png' },
+                { id: 'L0139', name: 'PER. LED ALUM. EMBUT. NO FRAME SIMPLES (GAP) BRAF. 3M 84X39', price: 175.13, image: 'assents/L0139.png' },
+                { id: 'L0141', name: 'PERFIL LED ALUM. SOBREPOR BRANCO 2M 23X22.5', price: 36.57, image: 'assents/L0141.png' },
+                { id: 'L0142', name: 'PERFIL LED ALUM. SOBREPOR PRETO 2M 23X22.5', price: 40.63, image: 'assents/L0142.png' },
+                { id: 'L0143', name: 'PERFIL LED ALUM. SOBREPOR BRANCO 3M 23X22.5', price: 54.86, image: 'assents/L0143.png' },
+                { id: 'L0144', name: 'PERFIL LED ALUM. SOBREPOR PRETO 3M 23X22.5', price: 60.93, image: 'assents/L0144.png' },
+                { id: 'L0145', name: 'PERFIL LED ALUM. SOBREPOR BRANCO 2M 16.7X13.5', price: 26.68, image: 'assents/L0145.png' },
+                { id: 'L0146', name: 'PERFIL LED ALUM. SOBREPOR PRETO 2M 16.7X13.5', price: 29.64, image: 'assents/L0146.png' },
+                { id: 'L0147', name: 'PERFIL LED ALUM. SOBREPOR BRANCO 3M 16.7X13.5', price: 40.01, image: 'assents/L0147.png' },
+                { id: 'L0148', name: 'PERFIL LED ALUM. SOBREPOR PRETO 3M 16.7X13.5', price: 44.46, image: 'assents/L0148.png' },
+                { id: 'L0149', name: 'PERFIL LED ALUM. EMBUTIR BRANCO 2M 23.7X13.5', price: 28.55, image: 'assents/L0149.png' },
+                { id: 'L0150', name: 'PERFIL LED ALUM. EMBUTIR PRETO 2M 23.7X13.5', price: 31.72, image: 'assents/L0150.png' },
+                { id: 'L0151', name: 'PERFIL LED ALUM. EMBUTIR BRANCO 3M 23.7X13.5', price: 42.83, image: 'assents/L0151.png' },
+                { id: 'L0153', name: 'PER. LED ALUM. EMBUT. NO FRAME SIMPLES (GAP) BRAF. 2M 85X35.1', price: 127.58, image: 'assents/L0153.png' },
+                { id: 'L0155', name: 'PER. LED ALUM. EMBUT. NO FRAME SIMPLES (GAP) BRAF. 3M 85X35.1', price: 190.21, image: 'assents/L0155.png' },
+                { id: 'L0157', name: 'PER. LED ALUM. EMBUT. ACR. DIAMANTE 67PCS OURO 2M 43.8X33.3', price: 208.76, image: 'assents/L0157.png' },
+                { id: 'L0158', name: 'PER. LED ALUM. EMBUT. ACR. DIAMANTE 100PCS OURO 3M 43.8X33.3', price: 309.66, image: 'assents/L0158.png' },
+                { id: 'L0159', name: 'PER. LED ALUM. EMBUT. ACR. DIAMANTE 67PCS BRAF. 2M 43.8X33.3', price: 208.76, image: 'assents/L0159.png' },
+                { id: 'L0160', name: 'PER. LED ALUM. EMBUT. ACR. DIAMANTE 67PCS PREF. 2M 43.8X33.3', price: 208.76, image: 'assents/L0160.png' },
+                { id: 'L0161', name: 'PER. LED ALUM. EMBUT. ACR. DIAMANTE 100PCS BRAF. 3M 43.8X33.3', price: 309.66, image: 'assents/L0161.png' },
+                { id: 'L0162', name: 'PER. LED ALUM. EMBUT. ACR. DIAMANTE 100PCS PREF. 3M 43.8X33.3', price: 309.66, image: 'assents/L0162.png' },
+                { id: 'L0163', name: 'PER. LED ALUM. SOBRE. ACR. DIAMANTE 67PCS BRAF. 2M 52.4X35', price: 269.07, image: 'assents/L0163.png' },
+                { id: 'L0164', name: 'PER. LED ALUM. SOBRE. ACR. DIAMANTE 67PCS PREF. 2M 52.4X35', price: 269.07, image: 'assents/L0164.png' },
+                { id: 'L0165', name: 'PER. LED ALUM. SOBRE. ACR. DIAMANTE 100PCS BRAF. 3M 52.4X35', price: 382.73, image: 'assents/L0165.png' },
+                { id: 'L0166', name: 'PER. LED ALUM. SOBRE. ACR. DIAMANTE 100PCS PREF. 3M 52.4X35', price: 382.73, image: 'assents/L0166.png' },
+                { id: 'L0167', name: 'PER. LED ALUM. EMBUT. PARA FACHADA IP65 BRAF. 2M 24.6X13.5', price: 85.95, image: 'assents/L0167.png' },
+                { id: 'L0168', name: 'PER. LED ALUM. EMBUT. PARA FACHADA IP65 PREF. 2M 24.6X13.5', price: 95.51, image: 'assents/L0168.png' },
+                { id: 'L0169', name: 'PER. LED ALUM. EMBUT. PARA FACHADA IP65 BRAF. 3M 24.6X13.5', price: 128.74, image: 'assents/L0169.png' },
+                { id: 'L0170', name: 'PER. LED ALUM. EMBUT. PARA FACHADA IP65 PREF. 3M 24.3X13.4', price: 143.24, image: 'assents/L0170.png' },
+                { id: 'L0171', name: 'PER. LED ALUM. SOBRE. PARA FACHADA IP65 BRAF. 2M 17.5X13.5', price: 80.72, image: 'assents/L0171.png' },
+                { id: 'L0172', name: 'PER. LED ALUM. SOBRE. PARA FACHADA IP65 PREF. 2M 17.5X13.5', price: 89.69, image: 'assents/L0172.png' },
+                { id: 'L0173', name: 'PER. LED ALUM. SOBRE. PARA FACHADA IP65 BRAF. 3M 17.5X13.5', price: 121.08, image: 'assents/L0173.png' },
+                { id: 'L0174', name: 'PER. LED ALUM. SOBRE. PARA FACHADA IP65 PREF. 3M 17.5X13.5', price: 134.54, image: 'assents/L0174.png' },
+                { id: 'L0175', name: 'PER. LED ALUM. CABIDEIRO ELEGANCE PRATA. 2M 29X14.5', price: 75.64, image: 'assents/L0175.png' },
+                { id: 'L0176', name: 'PER. LED ALUM. CABIDEIRO ELEGANCE PRATA. 3M 29X14.5', price: 113.24, image: 'assents/L0176.png' },
+                { id: 'L0177', name: 'SUPORTE DE ANEL SUSPENSO DE PER. CABIDEIRO ELEGANCE 29X14.5', price: 6.96, image: 'assents/L0177.png' },
+                { id: 'L0178', name: 'SUPORTE PARA PENDURAR DE PER. CABIDEIRO LEGANCE 29X14.5', price: 3.71, image: 'assents/L0178.png' },
+                { id: 'L0179', name: 'PER. LED ALUM. SOBRE. E SUSPENSO BRAF. 2M 35X45', price: 156.96, image: 'assents/L0179.png' },
+                { id: 'L0180', name: 'PER. LED ALUM. SOBRE. E SUSPENSO PREF. 2M 35X45', price: 174.40, image: 'assents/L0180.png' },
+                { id: 'L0181', name: 'PER. LED ALUM. SOBRE. E SUSPENSO BRAF. 3M 35X45', price: 235.44, image: 'assents/L0181.png' },
+                { id: 'L0182', name: 'PER. LED ALUM. SOBRE. E SUSPENSO PREF. 3M 35X45', price: 261.59, image: 'assents/L0182.png' },
+                { id: 'L0183', name: 'PER. LED ALUM. SOBRE. E SUSPENSO BRAF. 2M 24.5X40', price: 126.80, image: 'assents/L0183.png' },
+                { id: 'L0184', name: 'PER. LED ALUM. SOBRE. E SUSPENSO PREF. 2M 24.5X40', price: 140.91, image: 'assents/L0184.png' },
+                { id: 'L0185', name: 'PER. LED ALUM. SOBRE. E SUSPENSO BRAF. 3M 24.5X40', price: 190.21, image: 'assents/L0185.png' },
+                { id: 'L0186', name: 'PER. LED ALUM. SOBRE. E SUSPENSO PREF. 3M 24.5X40', price: 211.08, image: 'assents/L0186.png' },
+                { id: 'L0188', name: 'PER. LED ALUM. RODAPE FINA. BRAF. 3M 10.3X50.2', price: 127.58, image: 'assents/L0188.png' },
+                { id: 'L0189', name: 'PRESILHA PARA PER. RODAPE FINA. BRAF. 3M 9.4X49.6', price: 2.32, image: 'assents/L0189.png' },
+                { id: 'L0190', name: 'TAMPA DIREITA DE PER.RODAPE FINA. BRAF.10.5X50', price: 5.45, image: 'assents/L0190.png' },
+                { id: 'L0191', name: 'TAMPA ESQUERDA DE PER.RODAPE FINA. BRAF. 10.5X50', price: 5.45, image: 'assents/L0191.png' },
+                { id: 'L0192', name: 'JUNÇÃO DE CANTO DE PER.RODAPE FINA. BRAF. 9.6X50.2', price: 8.35, image: 'assents/L0192.png' },
+                { id: 'L0193', name: 'JUNÇÃO DE QUINA DE PER.RODAPE FINA. BRAF. 11.2X50.2', price: 8.35, image: 'assents/L0193.png' },
+                { id: 'L0194', name: 'PER. LED PARA MÓVEIS ILUMINACAO DUPLA PRATA 2M 18X8.5', price: 43.49, image: 'assents/L0194.png' },
+                { id: 'L0195', name: 'PER. LED PARA MÓVEIS ILUMINACAO DUPLA PRATA 3M 18X8.5', price: 64.89, image: 'assents/L0195.png' },
+                { id: 'L0196', name: 'ACESSÓRIO KIT CABO PENDENTE DE 1 METRO', price: 9.28, image: 'assents/L0196.png' },
+                { id: 'L0197', name: 'ACESSÓRIO KIT CABO PENDENTE DE 2 METRO', price: 12.76, image: 'assents/L0197.png' },
+                { id: 'L0198', name: 'SAMPLE BOARD/ ACESSORIO', price: 289.95, image: 'assents/L0198.png' },
+                { id: 'L0199', name: 'CAIXA MOSTRUÁRIO', price: 811.85, image: 'assents/L0199.png' },
+                { id: 'L0200', name: 'PRESILHA FIXADORA PARA PERFIL ENTRE LARGURA 17~18mm (50PCS/PCT)', price: 115.98, image: 'assents/L0200.png' },
+                { id: 'L0201', name: 'PRESILHA FIXADORA PARA PERFIL ENTRE LARGURA 17~18mm (50PCS/PCT)', price: 92.79, image: 'assents/L0201.png' },
+                { id: 'L0202', name: 'PRESILHA DE INSERIR PARA BASE DE ENCAIXE MENOR 9mm (50PCS/PCT)', price: 75.39, image: 'assents/L0202.png' },
+                { id: 'L0203', name: 'PRESILHA DE INSERIR PARA BASE DE ENCAIXE MENOR 14mm (50PCS/PCT)', price: 75.39, image: 'assents/L0203.png' },
+                { id: 'GL0001', name: 'FERRAMENTA DE INSTALACAO DE FITA LED COM ROLDANAS ROLAMENTOS', price: 16.88, image: 'assents/GL0001.png' },
+                { id: 'LN001', name: 'FILME TRANSLÚCIDO TELA TENSIONADA COM 180mmX100mm', price: 290.45, image: 'assents/LN001.png' },
+                { id: 'LN002', name: 'FILME TRANSLÚCIDO TELA TENSIONADA COM 280mmX100mm', price: 450.00, image: 'assents/LN002.png' },
+                { id: 'LN003', name: 'FILME TRANSLÚCIDO TELA TENSIONADA COM 580mmX100mm', price: 920.45, image: 'assents/LN003.png' },
+                { id: 'LN004', name: 'PERFIL SILICONADO TRANSLÚCIDO 10.4X100mm', price: 9.27, image: 'assents/LN004.png' },
+                { id: 'LN005', name: 'PER. LED ALUM.TIPO SUPORTE DE FIXAÇÃO PARA LONA 7X30 Formato"H"', price: 36.82, image: 'assents/LN005.png' },
+                { id: 'LN006', name: 'PER. LED NYLON TIPO SUPORTE DE FIXAÇÃO PARA LONA 10X30 FORMATO"H"', price: 36.82, image: 'assents/LN006.png' },
+                { id: 'LN007', name: 'PER. LED ALUM.TIPO SUPORTE DE FIXAÇÃO PARA LONA 15X19 FORMATO"F"', price: 38.86, image: 'assents/LN007.png' },
+                { id: 'LN008', name: 'PER. LED ALUM.TIPO SUPORTE DE FIXAÇÃO PARA LONA 35X78 FORMATO"E"', price: 180.00, image: 'assents/LN008.png' },
+                { id: 'L0204', name: 'PER. LED ALUM. EMBUT. BRA. 2M 35X20', price: 128.98, image: 'assents/L0204.png' },
+                { id: 'L0205', name: 'PERFIL LED ALUM. EMBUTIR PRETO 2M 35X20', price: 128.98, image: 'assents/L0205.png' },
+                { id: 'L0206', name: 'PER. LED ALUM. EMBUT. BRA. 3M 35X20', price: 181.33, image: 'assents/L0206.png' },
+                { id: 'L0207', name: 'PERFIL LED ALUM. EMBUTIR PRETO 3M 35X20', price: 181.33, image: 'assents/L0207.png' },
+                { id: 'L0208', name: 'PERFIL LED ALUM. SOBREPOR PRETO 2M 35X35', price: 128.98, image: 'assents/L0208.png' },
+                { id: 'L0209', name: 'PERFIL LED ALUM. SOBREPOR PRETO 3M 35X35', price: 181.33, image: 'assents/L0209.png' }
+            ];
+
+            const productGrid = document.getElementById('productGrid');
+            const searchInput = document.getElementById('searchInput');
+            const cartButton = document.getElementById('cart-button');
+            const cartModal = document.getElementById('cart-modal');
+            const closeModal = document.getElementById('close-modal');
+            const cartItemsContainer = document.getElementById('cart-items');
+            const cartCount = document.getElementById('cart-count');
+            const cartTotal = document.getElementById('cart-total');
+            const whatsappCheckout = document.getElementById('whatsapp-checkout');
+            const downloadPdfBtn = document.getElementById('download-pdf');
+            const toast = document.getElementById('toast-notification');
+
+            let cart = [];
+
+            // --- FUNÇÕES DE RENDERIZAÇÃO ---
+
+            function renderProducts(productsToRender) {
+                productGrid.innerHTML = '';
+                if (productsToRender.length === 0) {
+                    productGrid.innerHTML = `<p class="text-center col-span-full text-gray-500">Nenhum produto encontrado.</p>`;
+                    return;
+                }
+                productsToRender.forEach(product => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-white rounded-lg shadow-md overflow-hidden product-card flex flex-col';
+                    card.innerHTML = `
+                        <div class="bg-gray-200 h-48 flex items-center justify-center">
+                             <img src="${product.image}" alt="${product.name}" class="h-full w-full object-cover" onerror="this.onerror=null;this.src='https://placehold.co/400x400/eeeeee/cccccc?text=Imagem+Indisponível';">
+                        </div>
+                        <div class="p-4 flex-grow flex flex-col justify-between">
+                            <div>
+                                <h3 class="font-semibold text-base text-gray-800" title="${product.name}">${product.name}</h3>
+                                <p class="text-sm text-gray-500 mb-2">${product.id}</p>
+                                <p class="text-2xl font-bold text-gray-900">R$ ${product.price.toFixed(2).replace('.', ',')}</p>
+                                <p class="text-xs text-gray-500">por BARRA/UN</p>
+                            </div>
+                            <button data-id="${product.id}" class="add-to-cart-btn mt-4 w-full bg-blue-500 text-white py-2 rounded-lg font-semibold hover:bg-blue-600 transition duration-300 flex items-center justify-center">
+                                <i class="fas fa-cart-plus mr-2"></i> Adicionar
+                            </button>
+                        </div>
+                    `;
+                    productGrid.appendChild(card);
+                });
+            }
+
+            function renderCart() {
+                cartItemsContainer.innerHTML = '';
+                if (cart.length === 0) {
+                    cartItemsContainer.innerHTML = '<p class="text-gray-500 text-center">Seu carrinho está vazio.</p>';
+                    whatsappCheckout.disabled = true;
+                    downloadPdfBtn.disabled = true;
+                } else {
+                     whatsappCheckout.disabled = false;
+                     downloadPdfBtn.disabled = false;
+                    cart.forEach(item => {
+                        const product = products.find(p => p.id === item.id);
+                        const itemTotal = item.quantity * product.price;
+                        const cartItem = document.createElement('div');
+                        cartItem.className = 'flex justify-between items-center mb-4 pb-4 border-b last:border-b-0';
+                        cartItem.innerHTML = `
+                            <div class="flex items-center w-2/3">
+                                <img src="${product.image}" alt="${product.name}" class="w-16 h-16 object-cover rounded-md mr-4">
+                                <div class="flex-1">
+                                    <p class="font-semibold text-gray-800 leading-tight">${product.name}</p>
+                                    <p class="text-sm text-gray-500">Valor unitário: R$ ${product.price.toFixed(2).replace('.', ',')}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button class="quantity-change bg-gray-200 text-gray-700 w-7 h-7 rounded-full hover:bg-gray-300 flex-shrink-0" data-id="${item.id}" data-change="-1">-</button>
+                                <span class="font-bold w-8 text-center">${item.quantity}</span>
+                                <button class="quantity-change bg-gray-200 text-gray-700 w-7 h-7 rounded-full hover:bg-gray-300 flex-shrink-0" data-id="${item.id}" data-change="1">+</button>
+                                <button class="remove-item text-red-500 hover:text-red-700 ml-2" data-id="${item.id}"><i class="fas fa-trash"></i></button>
+                            </div>
+                        `;
+                        cartItemsContainer.appendChild(cartItem);
+                    });
+                }
+                updateCartSummary();
+            }
+
+            function updateCartSummary() {
+                const total = cart.reduce((sum, item) => {
+                    const product = products.find(p => p.id === item.id);
+                    return sum + (item.quantity * product.price);
+                }, 0);
+                cartTotal.textContent = `R$ ${total.toFixed(2).replace('.', ',')}`;
+
+                const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+                cartCount.textContent = totalItems;
+                cartCount.classList.toggle('hidden', totalItems === 0);
+            }
+            
+            function showToast() {
+                toast.classList.remove('opacity-0', '-translate-y-10');
+                toast.classList.add('opacity-100', 'translate-y-0');
+                setTimeout(() => {
+                    toast.classList.remove('opacity-100', 'translate-y-0');
+                    toast.classList.add('opacity-0', '-translate-y-10');
+                }, 2000);
+            }
+
+            // --- FUNÇÕES DE LÓGICA ---
+
+            function addToCart(productId) {
+                const existingItem = cart.find(item => item.id === productId);
+                if (existingItem) {
+                    existingItem.quantity++;
+                } else {
+                    cart.push({ id: productId, quantity: 1 });
+                }
+                showToast();
+                updateCartSummary();
+                renderCart(); // Re-render cart to show new item if modal is open
+            }
+
+            function changeQuantity(productId, change) {
+                const cartItem = cart.find(item => item.id === productId);
+                if (cartItem) {
+                    cartItem.quantity += change;
+                    if (cartItem.quantity <= 0) {
+                        removeFromCart(productId);
+                    } else {
+                        renderCart();
+                    }
+                }
+            }
+            
+            function removeFromCart(productId) {
+                 cart = cart.filter(item => item.id !== productId);
+                 renderCart();
+            }
+
+            function filterProducts() {
+                const query = searchInput.value.toLowerCase();
+                const filteredProducts = products.filter(product =>
+                    product.name.toLowerCase().includes(query) ||
+                    product.id.toLowerCase().includes(query)
+                );
+                renderProducts(filteredProducts);
+            }
+
+            function generateWhatsappMessage() {
+                let message = "Olá! Gostaria de solicitar um orçamento para os seguintes produtos:\n\n";
+                cart.forEach(item => {
+                    const product = products.find(p => p.id === item.id);
+                    const totalItemPrice = (item.quantity * product.price).toFixed(2).replace('.', ',');
+                    message += `${product.id} - ${product.name}\n`;
+                    message += `Qtd: ${item.quantity} - Valor unitário: R$ ${product.price.toFixed(2).replace('.', ',')} - Total: R$ ${totalItemPrice}\n\n`;
+                });
+
+                const grandTotal = cart.reduce((sum, item) => {
+                    const product = products.find(p => p.id === item.id);
+                    return sum + (item.quantity * product.price);
+                }, 0).toFixed(2).replace('.', ',');
+
+                message += `*Total do Pedido: R$ ${grandTotal}*\n\nObrigado!`;
+                return encodeURIComponent(message);
+            }
+            
+            function downloadPdf() {
+                if (cart.length === 0) return;
+
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                const tableColumn = ["Código", "Descrição", "Qtd.", "Vlr. Unit.", "Total"];
+                const tableRows = [];
+
+                cart.forEach(item => {
+                    const product = products.find(p => p.id === item.id);
+                    const itemData = [
+                        product.id,
+                        product.name,
+                        item.quantity,
+                        `R$ ${product.price.toFixed(2).replace('.', ',')}`,
+                        `R$ ${(item.quantity * product.price).toFixed(2).replace('.', ',')}`
+                    ];
+                    tableRows.push(itemData);
+                });
+
+                const grandTotal = cart.reduce((sum, item) => {
+                    const product = products.find(p => p.id === item.id);
+                    return sum + (item.quantity * product.price);
+                }, 0).toFixed(2).replace('.', ',');
+
+                doc.setFontSize(22);
+                doc.setFont('helvetica', 'bold');
+                doc.text("LUMILINE", 14, 22);
+                doc.setFontSize(11);
+                doc.setFont('helvetica', 'normal');
+                doc.text("Orçamento de Perfis de LED", 14, 28);
+                
+                doc.setFontSize(10);
+                doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, 14, 34);
+
+                doc.autoTable({
+                    startY: 40,
+                    head: [tableColumn],
+                    body: tableRows,
+                    theme: 'striped',
+                    headStyles: { fillColor: [30, 144, 255] }, // Azul
+                     styles: { font: 'helvetica', fontSize: 8 },
+                    columnStyles: {
+                        0: {cellWidth: 20},
+                        1: {cellWidth: 'auto'},
+                        2: {cellWidth: 15, halign: 'center'},
+                        3: {cellWidth: 25, halign: 'right'},
+                        4: {cellWidth: 25, halign: 'right'}
+                    }
+                });
+
+                const finalY = doc.lastAutoTable.finalY;
+                doc.setFontSize(14);
+                doc.setFont('helvetica', 'bold');
+                doc.text(`Total do Pedido: R$ ${grandTotal}`, 14, finalY + 15);
+
+                doc.save('orcamento-lumiline.pdf');
+            }
+
+
+            // --- EVENT LISTENERS ---
+
+            searchInput.addEventListener('input', filterProducts);
+            
+            productGrid.addEventListener('click', (e) => {
+                if (e.target.closest('.add-to-cart-btn')) {
+                    const button = e.target.closest('.add-to-cart-btn');
+                    const productId = button.dataset.id;
+                    addToCart(productId);
+                }
+            });
+
+            cartButton.addEventListener('click', () => {
+                renderCart();
+                cartModal.classList.remove('hidden');
+            });
+
+            closeModal.addEventListener('click', () => {
+                cartModal.classList.add('hidden');
+            });
+
+            cartModal.addEventListener('click', (e) => {
+                if (e.target === cartModal) {
+                    cartModal.classList.add('hidden');
+                }
+            });
+            
+            cartItemsContainer.addEventListener('click', e => {
+                const target = e.target.closest('button');
+                if (!target) return;
+
+                const productId = target.dataset.id;
+                
+                if (target.classList.contains('quantity-change')) {
+                    const change = parseInt(target.dataset.change);
+                    changeQuantity(productId, change);
+                }
+                
+                if (target.classList.contains('remove-item')) {
+                    removeFromCart(productId);
+                }
+            });
+
+            whatsappCheckout.addEventListener('click', () => {
+                if (cart.length > 0) {
+                    const message = generateWhatsappMessage();
+                    const phoneNumber = '5581994645392';
+                    window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
+                }
+            });
+
+            downloadPdfBtn.addEventListener('click', downloadPdf);
+
+            // Inicialização
+            renderProducts(products);
+            updateCartSummary();
+        });
+    </script>
+
+</body>
+</html>
