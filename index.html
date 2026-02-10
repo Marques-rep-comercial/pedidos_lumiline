@@ -1,756 +1,745 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { ShoppingCart, Search, Plus, Minus, Trash2, X, Package, Tag, Info, Check, AlertCircle, FileText, Download, MessageCircle } from 'lucide-react';
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo Lumiline</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel (para compilar JSX no navegador) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-// --- DATA PROCESSING & MOCK DATA ---
-// Dados extraídos do PDF "TABELA LUMILINE 09-02-2026.pdf"
-// Lista completa com todos os produtos do arquivo.
+    <!-- Bibliotecas de PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
 
-const rawProducts = [
-  // PÁGINA 1
-  { id: "L0001", desc: "PER. LED ALUM. SOBRE. BRAF. 2M 14X6.5 (M CX100)", priceFrac: 18.85, priceBox: 16.75 },
-  { id: "L0002", desc: "PER. LED ALUM. SOBRE. PREF. 2M 14X6.5 (M CX100)", priceFrac: 20.95, priceBox: 18.62 },
-  { id: "L0003", desc: "PER. LED ALUM. SOBRE. BRAF. 3M 14X6.5 (M CX100)", priceFrac: 28.28, priceBox: 25.14 },
-  { id: "L0004", desc: "PER. LED ALUM. SOBRE. PREF. 3M 14X6.5 (MCX100)", priceFrac: 31.42, priceBox: 27.93 },
-  { id: "L0005", desc: "PER. LED ALUM. EMBUT. BRAF 2M 17.2X6.5 (MCX100)", priceFrac: 19.83, priceBox: 17.63 },
-  { id: "L0006", desc: "PER. LED ALUM. EMBUT. PREF. 2M 17.2X6.5 (MCX100)", priceFrac: 22.04, priceBox: 19.59 },
-  { id: "L0007", desc: "PER. LED ALUM. EMBUT. BRAF. 3M 17.2X6.5 (M CX100)", priceFrac: 29.76, priceBox: 26.45 },
-  { id: "L0008", desc: "PER. LED ALUM. EMBUT. PREF. 3M 17.2X6.5 (MCX100)", priceFrac: 33.07, priceBox: 29.39 },
-  { id: "L0009", desc: "PER. LED ALUM. SOBRE. BRAF. 2M 29.4X9.9 (M CX50)", priceFrac: 34.35, priceBox: 30.54 },
-  { id: "L0010", desc: "PER. LED ALUM. SOBRE. PREF. 2M 29.4X9.9 (M CX50)", priceFrac: 38.17, priceBox: 33.93 },
-  { id: "L0011", desc: "PER. LED ALUM. SOBRE. BRAF. 3M 29.4X9.9 (M CX50)", priceFrac: 51.53, priceBox: 45.80 },
-  { id: "L0012", desc: "PER. LED ALUM. SOBRE. PREF. 3M 29.4X9.9 (M CX50)", priceFrac: 57.25, priceBox: 50.89 },
-  { id: "L0013", desc: "PER. LED ALUM. EMBUT. BRAF. 2M 40x9.9 (M CX50)", priceFrac: 36.15, priceBox: 32.14 },
-  { id: "L0014", desc: "PER. LED ALUM. EMBUT. PREF. 2M 40x9.9 (M CX50)", priceFrac: 40.16, priceBox: 35.70 },
-  { id: "L0015", desc: "PER. LED ALUM. EMBUT. BRAF. 3M 40x9.9 (M CX50)", priceFrac: 54.23, priceBox: 48.21 },
-  { id: "L0016", desc: "PER. LED ALUM. EMBUT. PREF. 3M 40x9.9 (M CX50)", priceFrac: 60.25, priceBox: 53.56 },
-  { id: "L0017", desc: "PER. LED ALUM. SOBRE. CANTO DOIS FACHOS BRAF. 2M 68.7X68.7 (M CX10)", priceFrac: 199.61, priceBox: 177.43 },
-  { id: "L0018", desc: "PER. LED ALUM. SOBRE. CANTO DOIS FACHOS BRAF. 3M 68.7X68.7 (MCX10)", priceFrac: 297.50, priceBox: 264.44 },
-  { id: "L0019", desc: "PER. LED ALUM. EMBUT. RECUADO BRAF. 2M 35.6X22.9 (M CX50)", priceFrac: 57.10, priceBox: 50.75 },
-  { id: "L0020", desc: "PER. LED ALUM. EMBUT. RECUADO PREF. 2M 35.6X22.9 (M CX50)", priceFrac: 63.44, priceBox: 56.39 },
-  { id: "L0021", desc: "PER. LED ALUM. EMBUT. RECUADO BRAF. 3M 35.6X22.9 (M CX50)", priceFrac: 85.65, priceBox: 76.14 },
-  { id: "L0022", desc: "PER. LED ALUM. EMBUT. RECUADO PREF. 3M 35.6X22.9 (M CX50)", priceFrac: 95.16, priceBox: 84.59 },
-  { id: "L0023", desc: "PER. LED ALUM. EMBUT. RECUADO BRAF. 2M 24.2X14.2 (MCX100)", priceFrac: 32.94, priceBox: 29.28 },
-  { id: "L0024", desc: "PER. LED ALUM. EMBUT. RECUADO PREF. 2M 24.2X14.2 (M CX100)", priceFrac: 36.59, priceBox: 32.52 },
-  { id: "L0025", desc: "PER. LED ALUM. EMBUT. RECUADO BRAF. 3M 24.2X14.2 (MCX100)", priceFrac: 49.41, priceBox: 43.92 },
-  { id: "L0026", desc: "PER. LED ALUM. EMBUT. RECUADO PREF. 3M 24.2X14.2 (M CX100)", priceFrac: 54.89, priceBox: 48.79 },
-  { id: "L0027", desc: "PER. LED ALUM. SOBRE. BRAF. 2M 35X35 (M CX20)", priceFrac: 108.80, priceBox: 96.71 },
-  { id: "L0028", desc: "PER. LED ALUM. SOBRE. PREF. 2M 35X35 (M CX20)", priceFrac: 120.88, priceBox: 107.45 },
-  { id: "L0029", desc: "PER. LED ALUM. SOBRE. BRAF. 3M 35X35 (M CX20)", priceFrac: 163.21, priceBox: 145.07 },
-  { id: "L0030", desc: "PER. LED ALUM. SOBRE. PREF. 3M 35X35 (M CX20)", priceFrac: 181.33, priceBox: 161.18 },
-  { id: "L0031", desc: "PER. LED ALUM. EMBUT. BRAF. 2M 50.4X35 (MCX20)", priceFrac: 112.60, priceBox: 100.09 },
-  { id: "L0032", desc: "PER. LED ALUM. EMBUT. PREF. 2M 50.4X35 (M CX24)", priceFrac: 125.12, priceBox: 111.22 },
-  { id: "L0033", desc: "PER. LED ALUM. EMBUT. BRAF. 3M 50.4X35 (M CX24)", priceFrac: 168.91, priceBox: 150.14 },
-  { id: "L0034", desc: "PER. LED ALUM. EMBUT. PREF. 3M 50.4X35 (M CX24)", priceFrac: 187.68, priceBox: 166.82 },
-  { id: "L0035", desc: "PER. LED ALUM. EMBUT. PISO PRA. 2M 20X15 (M CX40)", priceFrac: 71.91, priceBox: 63.92 },
-  { id: "L0036", desc: "PER. LED ALUM. EMBUT. PISO PRA. 3M 20X15 (M CX40)", priceFrac: 107.70, priceBox: 95.73 },
-  { id: "L0037", desc: "PER. LED ALUM. EMBUT. BRAF. 2M 65X34.7 (MCX20)", priceFrac: 130.72, priceBox: 116.20 },
-  { id: "L0038", desc: "PER. LED ALUM. EMBUT. PREF. 2M 65X34.7 (M CX20)", priceFrac: 145.24, priceBox: 129.10 },
-  { id: "L0039", desc: "PER. LED ALUM. EMBUT. BRAF. 3M 65X34.7 (MCX20)", priceFrac: 196.09, priceBox: 174.30 },
-  { id: "L0040", desc: "PER. LED ALUM. EMBUT. PREF. 3M 65X34.7 (M CX20)", priceFrac: 217.88, priceBox: 193.67 },
-  { id: "L0041", desc: "PER. LED ALUM. SOBRE. BRAF. 2M 50X34.7 (MCX20)", priceFrac: 130.41, priceBox: 115.92 },
-  { id: "L0042", desc: "PER. LED ALUM. SOBRE. PREF. 2M 50X34.7 (M CX20)", priceFrac: 144.89, priceBox: 128.79 },
-  { id: "L0043", desc: "PER. LED ALUM. SOBRE. BRAF. 3M 50X34.7 (MCX20)", priceFrac: 195.89, priceBox: 174.12 },
-  { id: "L0044", desc: "PER. LED ALUM. SOBRE. PREF. 3M 50X34.7 (MCX20)", priceFrac: 217.65, priceBox: 193.46 },
-  { id: "L0045", desc: "PER. LED ALUM. EMBUT. BRAF. 2M 30.2X9.6 (MCX50)", priceFrac: 21.65, priceBox: 19.24 },
-  { id: "L0046", desc: "PER. LED ALUM. EMBUT. PREF. 2M 30.2X9.6 (M CX50)", priceFrac: 24.01, priceBox: 21.34 },
-  { id: "L0047", desc: "PER. LED ALUM. EMBUT. BRAF. 3M 30.2X9.6 (MCX50)", priceFrac: 32.48, priceBox: 28.87 },
-  { id: "L0048", desc: "PER. LED ALUM. EMBUT. PREF. 3M 30.2X9.6 (M CX50)", priceFrac: 32.67, priceBox: 29.04 },
-  { id: "L0049", desc: "PER. LED ALUM. SOBRE. BRAF. 2M 22.8X9.6 (M CX50)", priceFrac: 19.73, priceBox: 17.54 },
-  { id: "L0050", desc: "PER. LED ALUM. SOBRE. PREF. 2M 22.8X9.6 (MCX100)", priceFrac: 21.92, priceBox: 19.48 },
-  { id: "L0051", desc: "PER. LED ALUM. SOBRE. BRAF. 3M 22.8X9.6 (M CX50)", priceFrac: 29.59, priceBox: 26.30 },
-  { id: "L0052", desc: "PER. LED ALUM. SOBRE. PREF. 3M 22.8X9.6 (MCX100)", priceFrac: 33.00, priceBox: 29.33 },
-  { id: "L0053", desc: "PER. LED ALUM. SOBRE. E PENDENTE BRAF. 2M 23X26.7 (M CX25)", priceFrac: 49.28, priceBox: 43.80 },
-  { id: "L0054", desc: "PER. LED ALUM. SOBRE. E PENDENTE PREF. 2M 23X26.7 (M CX80)", priceFrac: 54.76, priceBox: 48.67 },
-  { id: "L0055", desc: "PER. LED ALUM. SOBRE. E PENDENTE BRAF. 3M 23X26.7 (M CX25)", priceFrac: 73.91, priceBox: 65.70 },
-  { id: "L0056", desc: "PER. LED ALUM. SOBRE. E PENDENTE PREF. 3M 23X26.7 (M CX25)", priceFrac: 82.13, priceBox: 73.00 },
-  { id: "L0057", desc: "PER. LED ALUM. EMBUT. BRAF. 2M 36X26.7 (M CX25)", priceFrac: 57.22, priceBox: 50.86 },
-  { id: "L0058", desc: "PER. LED ALUM. EMBUT. PREF. 2M 36X26.7 (M CX25)", priceFrac: 63.58, priceBox: 56.52 },
+    <!-- Fonte Inter (Opcional, para ficar mais bonito) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        /* Remove setinhas do input number */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+    <div id="root"></div>
 
-  // PÁGINA 2
-  { id: "L0059", desc: "PER. LED ALUM. EMBUT. BRAF. 3M 36X26.7 (MCX25)", priceFrac: 85.84, priceBox: 76.30 },
-  { id: "L0060", desc: "PER. LED ALUM. EMBUT. PREF. 3M 36X26.7 (M CX25)", priceFrac: 95.37, priceBox: 84.77 },
-  { id: "L0061", desc: "PER. LED ALUM. SOBRE. BRAF. 2M 7.8X9 (M CX100)", priceFrac: 18.36, priceBox: 16.32 },
-  { id: "L0062", desc: "PER. LED ALUM. SOBRE. PREF. 2M 7.8X9 (M CX100)", priceFrac: 20.41, priceBox: 18.14 },
-  { id: "L0063", desc: "PER. LED ALUM. SOBRE. BRAF. 3M 7.8X9 (M CX100)", priceFrac: 27.56, priceBox: 24.50 },
-  { id: "L0064", desc: "PER. LED ALUM. SOBRE. PREF. 3M 7.8X9 (M CX50)", priceFrac: 33.68, priceBox: 29.94 },
-  { id: "L0065", desc: "PER. LED ALUM. EMBUT. BRAF. 2M 11.2X9 (M CX100)", priceFrac: 19.65, priceBox: 17.46 },
-  { id: "L0066", desc: "PER. LED ALUM. EMBUT. PREF. 2M 11.2X9 (MCX100)", priceFrac: 21.83, priceBox: 19.40 },
-  { id: "L0067", desc: "PER. LED ALUM. EMBUT. BRAF. 3M 11.2X9 (M CX100)", priceFrac: 29.47, priceBox: 26.20 },
-  { id: "L0068", desc: "PER. LED ALUM. EMBUT. PREF. 3M 11.2X9 (M CX100)", priceFrac: 32.75, priceBox: 29.11 },
-  { id: "L0069", desc: "PER. LED ALUM. SOBRE. BRAF. 2M 9.6X12.8 (M CX100)", priceFrac: 20.18, priceBox: 17.94 },
-  { id: "L0070", desc: "PER. LED ALUM. SOBRE. PREF. 2M 9.6X12.8 (MCX100)", priceFrac: 22.40, priceBox: 19.91 },
-  { id: "L0071", desc: "PER. LED ALUM. SOBRE. BRAF. 3M 9.6X12.8 (M CX100)", priceFrac: 30.25, priceBox: 26.89 },
-  { id: "L0072", desc: "PER. LED ALUM. SOBRE. PREF. 3M 9.6X12.8 (M CX100)", priceFrac: 33.61, priceBox: 29.88 },
-  { id: "L0073", desc: "PER. LED ALUM. EMBUT. BRAF. 2M 13.5X12.8 (M CX100)", priceFrac: 22.84, priceBox: 20.30 },
-  { id: "L0074", desc: "PER. LED ALUM. EMBUT. PREF. 2M 13.5X12.8 (MCX100)", priceFrac: 25.38, priceBox: 22.56 },
-  { id: "L0075", desc: "PER. LED ALUM. EMBUT. BRAF. 3M 13.5X12.8 (M CX100)", priceFrac: 34.27, priceBox: 30.46 },
-  { id: "L0076", desc: "PER. LED ALUM. EMBUT. PREF. 3M 13.5X12.8 (MCX100)", priceFrac: 38.07, priceBox: 33.84 },
-  { id: "L0077", desc: "PER. LED ALUM. TRIFACE COM ILUMINACAO BRAF. 2M 20X20.8 (M CX50)", priceFrac: 62.42, priceBox: 55.48 },
-  { id: "L0078", desc: "PER. LED ALUM. TRIFACE COM ILUMINACAO PREF. 2M 20X20.8 (M CX50)", priceFrac: 68.66, priceBox: 61.03 },
-  { id: "L0079", desc: "PER. LED ALUM. TRIFACE COM ILUMINACAO BRAF. 3M 20X20.8 (MCX50)", priceFrac: 93.62, priceBox: 83.22 },
-  { id: "L0080", desc: "PER. LED ALUM. TRIFACE COM ILUMINACAO PREF. 3M 20X20.8 (M CX50)", priceFrac: 104.02, priceBox: 92.46 },
-  { id: "L0081", desc: "PER. LED ALUM. EMBUT. BRAF. 2M 23.8X6.5 (M CX100)", priceFrac: 14.73, priceBox: 13.09 },
-  { id: "L0082", desc: "PER. LED ALUM. EMBUT. PREF. 2M 23.8X6.5 (MCX150)", priceFrac: 16.24, priceBox: 14.43 },
-  { id: "L0083", desc: "PER. LED ALUM. EMBUT. BRAF. 3M 23.8X6.5 (M CX100)", priceFrac: 22.04, priceBox: 19.59 },
-  { id: "L0084", desc: "PER. LED ALUM. EMBUT. PREF. 3M 23.8X6.5 (MCX100)", priceFrac: 24.35, priceBox: 21.65 },
-  { id: "L0085", desc: "PER. LED ALUM. SOBRE. BRAF. 2M 17.4X6.5 (M CX100)", priceFrac: 13.92, priceBox: 12.37 },
-  { id: "L0086", desc: "PER. LED ALUM. SOBRE. PREF. 2M 17.4X6.5 (M CX100)", priceFrac: 15.31, priceBox: 13.61 },
-  { id: "L0087", desc: "PER. LED ALUM. SOBRE. BRAF. 3M 17.4X6.5 (M CX100)", priceFrac: 20.88, priceBox: 18.56 },
-  { id: "L0088", desc: "PER. LED ALUM. SOBRE. PREF. 3M 17.4X6.5 (M CX100)", priceFrac: 22.96, priceBox: 20.41 },
-  { id: "L0089", desc: "PER. LED ALUM. EMBUT. BRAF. 2M 23X6.7 (MCX100)", priceFrac: 20.18, priceBox: 17.94 },
-  { id: "L0090", desc: "PER. LED ALUM. EMBUT. PREF. 2M 23X6.7 (M CX100)", priceFrac: 22.42, priceBox: 19.93 },
-  { id: "L0091", desc: "PER. LED ALUM. EMBUT. BRAF. 3M 23X6.7 (MCX100)", priceFrac: 30.27, priceBox: 26.91 },
-  { id: "L0092", desc: "PER. LED ALUM. EMBUT. PREF. 3M 23X6.6 (M CX100)", priceFrac: 33.63, priceBox: 29.90 },
-  { id: "L0093", desc: "PER. LED ALUM. SOBRE. BRAF. 2M 15.8X6.6 (M CX50)", priceFrac: 18.45, priceBox: 16.40 },
-  { id: "L0094", desc: "PER. LED ALUM. SOBRE. PREF. 2M 15.8X6.6 (M CX50)", priceFrac: 20.51, priceBox: 18.23 },
-  { id: "L0095", desc: "PER. LED ALUM. SOBRE. BRAF. 3M 15.8X6.6 (M CX50)", priceFrac: 27.67, priceBox: 24.60 },
-  { id: "L0096", desc: "PER. LED ALUM. SOBRE. PREF. 3M 15.8X6.6 (M CX50)", priceFrac: 30.74, priceBox: 27.32 },
-  { id: "L0097", desc: "PER. LED ALUM. EMBUT. BRAF. 2M 24.2X14.2 (MCX50)", priceFrac: 20.00, priceBox: 17.78 },
-  { id: "L0098", desc: "PER. LED ALUM. EMBUT. PREF. 2M 24.2X14.2 (M CX50)", priceFrac: 22.29, priceBox: 19.81 },
-  { id: "L0099", desc: "PER. LED ALUM. EMBUT. BRAF. 3M 24.2X14.2 (MCX50)", priceFrac: 30.02, priceBox: 26.68 },
-  { id: "L0100", desc: "PER. LED ALUM. EMBUT. PREF. 3M 24.2X14.2 (M CX50)", priceFrac: 33.43, priceBox: 29.72 },
-  { id: "L0101", desc: "PER. LED ALUM. SOBRE. BRAF. 2M 16.7X13.5 (M CX100)", priceFrac: 20.46, priceBox: 18.19 },
-  { id: "L0102", desc: "PER. LED ALUM. SOBRE. PREF. 2M 16.7X13.5 (M CX100)", priceFrac: 22.29, priceBox: 19.81 },
-  { id: "L0103", desc: "PER. LED ALUM. SOBRE. BRAF. 3M 16.7X13.5 (M CX100)", priceFrac: 31.38, priceBox: 27.90 },
-  { id: "L0104", desc: "PER. LED ALUM. SOBRE. PREF. 3M 16.7X13.5 (M CX50)", priceFrac: 33.43, priceBox: 29.72 },
-  { id: "L0105", desc: "PER. LED ALUM. EMBUT. BRAF. 2M 24.2X18 (M CX50)", priceFrac: 27.84, priceBox: 24.74 },
-  { id: "L0106", desc: "PER. LED ALUM. EMBUT. PREF. 2M 24.2X18 (M CX50)", priceFrac: 30.96, priceBox: 27.52 },
-  { id: "L0107", desc: "PER. LED ALUM. EMBUT. BRAF. 3M 24.2X18 (M CX50)", priceFrac: 41.67, priceBox: 37.04 },
-  { id: "L0108", desc: "PER. LED ALUM. EMBUT. PREF. 3M 24.2X18 (M CX50)", priceFrac: 46.39, priceBox: 41.24 },
-  { id: "L0109", desc: "PER. LED ALUM. SOBRE. CANTO EM V BRAF. 2M 15.4X15.4 (M CX100)", priceFrac: 14.30, priceBox: 12.71 },
-  { id: "L0110", desc: "PER. LED ALUM. SOBRE. CANTO EM V PREF. 2M 15.4X15.4 (M CX100)", priceFrac: 15.90, priceBox: 14.14 },
-  { id: "L0111", desc: "PER. LED ALUM. SOBRE. CANTO EM V BRAF. 3M 15.4X15.4 (M CX100)", priceFrac: 21.46, priceBox: 19.07 },
-  { id: "L0112", desc: "PER. LED ALUM. SOBRE. CANTO EM V PREF. 3M 15.4X15.4 (M CX100)", priceFrac: 23.85, priceBox: 21.20 },
-  { id: "L0113", desc: "PER. LED ALUM. SOBRE. BRAF. 2M 19.6*9.6 (M CX50)", priceFrac: 20.88, priceBox: 18.56 },
-  { id: "L0114", desc: "PER. LED ALUM. SOBRE. PREF. 2M 19.6*9.6 (M CX50)", priceFrac: 23.20, priceBox: 20.62 },
-  { id: "L0115", desc: "PER. LED ALUM. SOBRE. BRAF. 3M 19.6*9.6 (M CX50)", priceFrac: 31.32, priceBox: 27.84 },
-  { id: "L0116", desc: "PER. LED ALUM. SOBRE. PREF. 3M 19.6*9.6 (MCX50)", priceFrac: 34.79, priceBox: 30.93 },
-  { id: "L0117", desc: "PER. LED ALUM. EMBUT. BRAF. 2M 28X9.6 (M CX50)", priceFrac: 22.58, priceBox: 20.07 },
+    <script type="text/babel">
+        const { useState, useMemo, useEffect } = React;
 
-  // PÁGINA 3
-  { id: "L0118", desc: "PER. LED ALUM. EMBUT. PREF. 2M 28X9.6 (M CX50)", priceFrac: 25.10, priceBox: 22.31 },
-  { id: "L0119", desc: "PER. LED ALUM. EMBUT. BRAF. 3M 28X9.6 (M CX50)", priceFrac: 33.88, priceBox: 30.11 },
-  { id: "L0120", desc: "PER. LED ALUM. EMBUT. PREF. 3M 28X9.6 (MCX50)", priceFrac: 37.63, priceBox: 33.45 },
-  { id: "L0121", desc: "PER. LED ALUM. SOBRE. BRAF. 2M 20X15 (M CX50)", priceFrac: 34.79, priceBox: 30.93 },
-  { id: "L0122", desc: "PER. LED ALUM. SOBRE. PREF. 2M 20X15 (M CX50)", priceFrac: 38.54, priceBox: 34.26 },
-  { id: "L0123", desc: "PER. LED ALUM. SOBRE. BRAF. 3M 20X15 (M CX50)", priceFrac: 52.04, priceBox: 46.26 },
-  { id: "L0124", desc: "PER. LED ALUM. SOBRE. PREF. 3M 20X15 (M CX50)", priceFrac: 57.82, priceBox: 51.39 },
-  { id: "L0125", desc: "PER. LED ALUM. EMBUT. BRAF. 2M 26.8X15 (MCX50)", priceFrac: 36.74, priceBox: 32.66 },
-  { id: "L0126", desc: "PER. LED ALUM. EMBUT. PREF. 2M 26.8X15 (M CX50)", priceFrac: 40.82, priceBox: 36.29 },
-  { id: "L0127", desc: "PER. LED ALUM. EMBUT. BRAF. 3M 26.8X15 (M CX50)", priceFrac: 55.11, priceBox: 48.99 },
-  { id: "L0128", desc: "PER. LED ALUM. EMBUT. PREF. 3M 26.8X15 (M CX50)", priceFrac: 61.24, priceBox: 54.43 },
-  { id: "L0129", desc: "PER. LED ALUM. SOBRE. TROVAO DOIS FACHOS BRAF. 2M 70X40 (M CX10)", priceFrac: 193.34, priceBox: 171.86 },
-  { id: "L0130", desc: "PER. LED ALUM. SOBRE. TROVAO DOIS FACHOS PREF. 2M 70X40 (M CX10)", priceFrac: 212.82, priceBox: 189.18 },
-  { id: "L0131", desc: "PER. LED ALUM. SOBRE. TROVAO DOIS FACHOS BRAF. 3M 70X40 (M CX10)", priceFrac: 289.95, priceBox: 257.73 },
-  { id: "L0132", desc: "PER. LED ALUM. SOBRE. TROVAO DOIS FACHOS PREF. 3M 70X40 (M CX10)", priceFrac: 319.18, priceBox: 283.71 },
-  { id: "L0133", desc: "PER. LED ALUM. EMBUT. NO FRAME DUPLO (GAP) BRAF. 2M 115.2X42 (M CX10)", priceFrac: 162.37, priceBox: 144.33 },
-  { id: "L0135", desc: "PER. LED ALUM. EMBUT. NO FRAME DUPLO (GAP) BRAF. 3M 115.2X42 (M CX10)", priceFrac: 255.15, priceBox: 226.80 },
-  { id: "L0137", desc: "PER. LED ALUM. EMBUT. NO FRAME SIMPLES (GAP) BRAF. 2M 84X39 (M CX10)", priceFrac: 117.14, priceBox: 104.12 },
-  { id: "L0139", desc: "PER. LED ALUM. EMBUT. NO FRAME SIMPLES (GAP) BRAF. 3M 84X39 (M CX10)", priceFrac: 175.13, priceBox: 155.67 },
-  { id: "L0141", desc: "PER. LED ALUM. SOBRE. BRAF. 2M 23X22.5 (M CX50)", priceFrac: 36.57, priceBox: 32.50 },
-  { id: "L0142", desc: "PER. LED ALUM. SOBRE. PREF. 2M 23X22.5 (MCX50)", priceFrac: 40.63, priceBox: 36.11 },
-  { id: "L0143", desc: "PER. LED ALUM. SOBRE. BRAF. 3M 23X22.5 (M CX50)", priceFrac: 54.86, priceBox: 48.76 },
-  { id: "L0144", desc: "PER. LED ALUM. SOBRE. PREF. 3M 23X22.5 (MCX50)", priceFrac: 60.93, priceBox: 54.16 },
-  { id: "L0145", desc: "PER. LED ALUM. SOBRE. BRAF. 2M 16.7X13.5 (M CX100)", priceFrac: 26.68, priceBox: 23.71 },
-  { id: "L0146", desc: "PER. LED ALUM. SOBRE. PREF. 2M 16.7X13.5 (M CX100)", priceFrac: 29.64, priceBox: 26.34 },
-  { id: "L0147", desc: "PER. LED ALUM. SOBRE. BRAF. 3M 16.7X13.5 (M CX100)", priceFrac: 40.01, priceBox: 35.57 },
-  { id: "L0148", desc: "PER. LED ALUM. SOBRE. PREF. 3M 16.7X13.5 (M CX100)", priceFrac: 44.46, priceBox: 39.52 },
-  { id: "L0149", desc: "PER. LED ALUM. EMBUT. BRAF. 2M 23.7X13.5 (M CX100)", priceFrac: 28.55, priceBox: 25.38 },
-  { id: "L0150", desc: "PER. LED ALUM. EMBUT. PREF. 2M 23.7X13.5 (M CX100)", priceFrac: 31.72, priceBox: 28.20 },
-  { id: "L0151", desc: "PER. LED ALUM. EMBUT. BRAF. 3M 23.7X13.5 (M CX100)", priceFrac: 42.83, priceBox: 38.07 },
-  { id: "L0152", desc: "PER. LED ALUM. EMBUT. PREF. 3M 23.7X13.5 (M CX100)", priceFrac: 47.59, priceBox: 42.30 },
-  { id: "L0153", desc: "PER. LED ALUM. EMBUT. NO FRAME SIMPLES (GAP) BRAF. 2M 85X35.1 (M CX10)", priceFrac: 127.58, priceBox: 113.40 },
-  { id: "L0155", desc: "PER. LED ALUM. EMBUT. NO FRAME SIMPLES (GAP) BRAF. 3M 85X35.1 (MCX10)", priceFrac: 190.21, priceBox: 169.07 },
-  { id: "L0157", desc: "PER. LED ALUM. EMBUT. ACR. DIAMANTE 67PCS OURO 2M 43.8X33.3 (CX10)", priceFrac: 208.76, priceBox: 185.57 },
-  { id: "L0158", desc: "PER. LED ALUM. EMBUT. ACR. DIAMANTE 100PCS OURO 3M 43.8X33.3 (CX10)", priceFrac: 309.66, priceBox: 275.26 },
-  { id: "L0159", desc: "PER. LED ALUM. EMBUT. ACR. DIAMANTE 67PCS BRAF. 2M 43.8X33.3 (CX10)", priceFrac: 208.76, priceBox: 185.57 },
-  { id: "L0160", desc: "PER. LED ALUM. EMBUT. ACR. DIAMANTE 67PCS PREF. 2M 43.8X33.3 (CX10)", priceFrac: 208.76, priceBox: 185.57 },
-  { id: "L0161", desc: "PER. LED ALUM. EMBUT. ACR. DIAMANTE 100PCS BRAF. 3M 43.8X33.3 (CX10)", priceFrac: 309.66, priceBox: 275.26 },
-  { id: "L0162", desc: "PER. LED ALUM. EMBUT. ACR. DIAMANTE 100PCS PREF. 3M 43.8X33.3 (CX10)", priceFrac: 309.66, priceBox: 275.26 },
-  { id: "L0163", desc: "PER. LED ALUM. SOBRE. ACR. DIAMANTE 67PCS BRAF. 2M 52.4X35 (M CX10)", priceFrac: 269.07, priceBox: 239.18 },
-  { id: "L0164", desc: "PER. LED ALUM. SOBRE. ACR. DIAMANTE 67PCS PREF. 2M 52.4X35 (M CX10)", priceFrac: 269.07, priceBox: 239.18 },
-  { id: "L0165", desc: "PER. LED ALUM. SOBRE. ACR. DIAMANTE 100PCS BRAF. 3M 52.4X35 (M CX10)", priceFrac: 382.73, priceBox: 340.21 },
-  { id: "L0166", desc: "PER. LED ALUM. SOBRE. ACR. DIAMANTE 100PCS PREF. 3M 52.4X35 (M CX10)", priceFrac: 382.73, priceBox: 340.21 },
-  { id: "L0167", desc: "PER. LED ALUM. EMBUT. PARA FACHADA IP65 BRAF. 2M 24.6X13.5 (M CX50)", priceFrac: 85.95, priceBox: 76.40 },
-  { id: "L0168", desc: "PER. LED ALUM. EMBUT. PARA FACHADA IP65 PREF. 2M 24.6X13.5 (M CX20)", priceFrac: 95.51, priceBox: 84.90 },
-  { id: "L0169", desc: "PER. LED ALUM. EMBUT. PARA FACHADA IP65 BRAF. 3M 24.6X13.5 (MCX50)", priceFrac: 128.74, priceBox: 114.43 },
-  { id: "L0170", desc: "PER. LED ALUM. EMBUT. PARA FACHADA IP65 PREF. 3M 24.3X13.4 (M CX40)", priceFrac: 143.24, priceBox: 127.32 },
-  { id: "L0171", desc: "PER. LED ALUM. SOBRE. PARA FACHADA IP65 BRAF. 2M 17.5X13.5 (M CX50)", priceFrac: 80.72, priceBox: 71.75 },
-  { id: "L0172", desc: "PER. LED ALUM. SOBRE. PARA FACHADA IP65 PREF. 2M 17.5X13.5 (MCX20)", priceFrac: 89.69, priceBox: 79.72 },
-  { id: "L0173", desc: "PER. LED ALUM. SOBRE. PARA FACHADA IP65 BRAF. 3M 17.5X13.5 (M CX50)", priceFrac: 121.08, priceBox: 107.63 },
-  { id: "L0174", desc: "PER. LED ALUM. SOBRE. PARA FACHADA IP65 PREF. 3M 17.5X13.5 (M CX40)", priceFrac: 134.54, priceBox: 119.59 },
-  { id: "L0175", desc: "PER. LED ALUM. CABIDEIRO ELEGANCE PRATA. 2M 29X14.5 (MCX50)", priceFrac: 75.64, priceBox: 67.24 },
-  { id: "L0176", desc: "PER. LED ALUM. CABIDEIRO ELEGANCE PRATA. 3M 29X14.5 (M CX50)", priceFrac: 113.24, priceBox: 100.66 },
-  { id: "L0177", desc: "SUPORTE DE ANEL SUSPENSO DE PER. CABIDEIRO ELEGANCE 29X14.5 (M CX340)", priceFrac: 6.96, priceBox: 6.18 },
-  { id: "L0178", desc: "SUPORTE FIXO DE PER. CABIDEIRO LEGANCE 29X14.5 (M CX340)", priceFrac: 3.71, priceBox: 3.30 },
-  { id: "L0179", desc: "PER. LED ALUM. SOBRE. E SUSPENSO BRAF. 2M 35X45 (M CX20)", priceFrac: 136.85, priceBox: 121.65 },
-  { id: "L0180", desc: "PER. LED ALUM. SOBRE. E SUSPENSO PREF. 2M 35X45 (M CX20)", priceFrac: 151.93, priceBox: 135.05 },
-  { id: "L0181", desc: "PER. LED ALUM. SOBRE. E SUSPENSO BRAF. 3M 35X45 (MCX20)", priceFrac: 205.29, priceBox: 182.48 },
-  { id: "L0182", desc: "PER. LED ALUM. SOBRE, E SUSPENSO PREF. 3M 35X45 (M CX20)", priceFrac: 227.32, priceBox: 202.06 },
-
-  // PÁGINA 4
-  { id: "L0183", desc: "PER. LED ALUM. SOBRE. E SUSPENSO BRAF. 2M 24.5X40 (M CX20)", priceFrac: 109.02, priceBox: 96.91 },
-  { id: "L0184", desc: "PER. LED ALUM. SOBRE. E SUSPENSO PREF. 2M 24.5X40 (M CX20)", priceFrac: 121.14, priceBox: 107.68 },
-  { id: "L0185", desc: "PER. LED ALUM. SOBRE. E SUSPENSO BRAF. 3M 24.5X40 (M CX20)", priceFrac: 163.53, priceBox: 145.36 },
-  { id: "L0186", desc: "PER. LED ALUM. SOBRE. E SUSPENSO PREF. 3M 24.5X40 (M CX20)", priceFrac: 181.70, priceBox: 161.51 },
-  { id: "L0187", desc: "PER. LED ALUM. RODAPE FINA. BRAF. 2M 10.3X50.2 (M CX40)", priceFrac: 85.05, priceBox: 75.60 },
-  { id: "L0188", desc: "PER. LED ALUM. RODAPE FINA. BRAF. 3M 10.3X50.2 (MCX40)", priceFrac: 127.58, priceBox: 113.40 },
-  { id: "L0189", desc: "PRESILHA PARA PER. RODAPE FINA. BRAF. 3M 9.4X49.6", priceFrac: 2.32, priceBox: 2.06 },
-  { id: "L0190", desc: "TAMPA DIREITA DE PER.RODAPE FINA. BRAF.10.5X50", priceFrac: 5.45, priceBox: 4.84 },
-  { id: "L0191", desc: "TAMPA ESQUERDA DE PER.RODAPE FINA. BRAF. 10.5X50", priceFrac: 5.45, priceBox: 4.84 },
-  { id: "L0192", desc: "JUNÇÃO DE CANTO DE PER.RODAPE FINA. BRAF. 9.6X50.2", priceFrac: 8.35, priceBox: 7.42 },
-  { id: "L0193", desc: "JUNÇÃO DE QUINA DE PER.RODAPE FINA. BRAF. 11.2X50.2", priceFrac: 8.35, priceBox: 7.42 },
-  { id: "L0194", desc: "PER. LED PARA MOVEIS ILUMINACAO DUPLA PRATA 2M 18X8.5 (M CX50)", priceFrac: 43.49, priceBox: 38.66 },
-  { id: "L0195", desc: "PER. LED PARA MÓVEIS ILUMINACAO DUPLA PRATA 3M 18X8.5 (M CX50)", priceFrac: 64.89, priceBox: 57.68 },
-  { id: "L0196", desc: "ACESSÓRIO KIT CABO PENDENTE DE 1 METRO", priceFrac: 9.28, priceBox: 8.25 },
-  { id: "L0197", desc: "ACESSÓRIO KIT CABO PENDENTE DE 2 METRO", priceFrac: 12.76, priceBox: 11.34 },
-  { id: "L0198", desc: "SAMPLE BOARD/ ACESSORIO", priceFrac: 289.95, priceBox: 257.73 },
-  { id: "L0199", desc: "CAIXA MOSTRUÁRIO", priceFrac: 811.85, priceBox: 721.65 },
-  { id: "L0200", desc: "PRESILHA FIXADORA PARA PERFIL ENTRE LARGURA 17~18mm (50PCS/PCT)", priceFrac: 115.98, priceBox: 103.09 },
-  { id: "L0201", desc: "PRESILHA FIXADORA PARA PERFIL ENTRE LARGURA 17~18mm (50PCS/PCT)", priceFrac: 92.79, priceBox: 82.48 },
-  { id: "L0202", desc: "PRESILHA DE INSERIR PARA BASE DE ENCAIXE MENOR 9mm (50PCS/PCT)", priceFrac: 75.39, priceBox: 67.01 },
-  { id: "L0203", desc: "PRESILHA DE INSERIR PARA BASE DE ENCAIXE MENOR 14mm (50PCS/PCT)", priceFrac: 75.39, priceBox: 67.01 },
-  { id: "GL0001", desc: "FERRAMENTA DE INSTALACAO DE FITA LED COM ROLDANAS ROLAMENTOS", priceFrac: 16.88, priceBox: 15.00 },
-  { id: "L0204", desc: "PER. LED ALUM. EMBUT. BRA. 2M 35X20 (M CX20)", priceFrac: 128.98, priceBox: 114.65 },
-  { id: "L0205", desc: "PER. LED ALUM. EMBUT. PRE. 2M 35X20 (M CX20)", priceFrac: 128.98, priceBox: 114.65 },
-  { id: "L0206", desc: "PER. LED ALUM. EMBUT. BRA. 3M 35X20 (M CX20)", priceFrac: 181.33, priceBox: 161.18 },
-  { id: "L0207", desc: "PER. LED ALUM. EMBUT. PRE. 3M 35X20 (M CX20)", priceFrac: 181.33, priceBox: 161.18 },
-  { id: "L0208", desc: "PER. LED ALUM. SOBRE. PREF. 2M 35X35 (MCX10) 2 PONTEIRAS/2 PRESILHAS", priceFrac: 121.50, priceBox: 108.00 },
-  { id: "L0209", desc: "PER. LED ALUM. SOBRE. PREF. 3M 35X35 (M CX10) 2 PONTEIRAS/3 PRESILHAS", priceFrac: 183.60, priceBox: 163.20 },
-  { id: "L0210", desc: "PER. LED ALUM. SOBRE. BRAF. 2M 35X35 (MCX10) 2 PONTEIRAS/2 PRESILHAS", priceFrac: 121.50, priceBox: 108.00 },
-  { id: "L0211", desc: "PER. LED ALUM. SOBRE. BRAF. 3M 35X35 (M CX10) 2 PONTEIRAS/3 PRESILHAS", priceFrac: 183.60, priceBox: 163.20 },
-  { id: "L0212", desc: "PER. LED ALUM. EMBUT. BRAF. 2M 50.4X35 (M CX10) 2 PONTEIRAS/2 PRESILHAS", priceFrac: 145.35, priceBox: 129.20 },
-  { id: "L0213", desc: "PER. LED ALUM. EMBUT. PREF. 2M 50.4X35 (M CX10) 2 PONTEIRAS/2 PRESILHAS", priceFrac: 145.35, priceBox: 129.20 },
-  { id: "L0214", desc: "PER. LED ALUM. EMBUT. BRAF. 3M 50.4X35 (M CX10) 2 PONTEIRAS/3 PRESILHAS", priceFrac: 217.35, priceBox: 193.20 },
-  { id: "L0215", desc: "PER. LED ALUM. EMBUT. PREF. 3M 50.4X35 (M CX10) 2 PONTEIRAS/3 PRESILHAS", priceFrac: 217.35, priceBox: 193.20 },
-  { id: "L0216", desc: "PER. LED ALUM. EMBUT. NO FRAME DUPLO (GAP) BRAF. 2M 115.2X42 (M CX3) 2 PONTEIRAS", priceFrac: 198.00, priceBox: 176.00 },
-  { id: "L0217", desc: "PER. LED ALUM. EMBUT. NO FRAME DUPLO (GAP) BRAF. 3M 115.2X42 (M CX3) 4 PONTEIRAS", priceFrac: 293.40, priceBox: 260.80 },
-];
-
-// Helper to extract Box Quantity from description
-// Looks for patterns like (M CX100), (MCX50), (CX10)
-const getBoxQuantity = (description) => {
-  const match = description.match(/\(\s*M?\s*CX\s*(\d+)\s*\)/i) || description.match(/\(\s*CX\s*(\d+)\s*\)/i);
-  return match ? parseInt(match[1], 10) : null;
-};
-
-// Enhance products with extracted data
-const products = rawProducts.map(p => ({
-  ...p,
-  boxQty: getBoxQuantity(p.desc) || 1, // Default to 1 if not found, but logic handles nulls
-  category: p.desc.includes("EMBUT") ? "Embutir" : p.desc.includes("SOBRE") ? "Sobrepor" : "Acessórios"
-}));
-
-
-export default function LumilineCatalog() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [cart, setCart] = useState([]);
-  const [isCartOpen, setIsCartOpen] = useState(false);
-  const [categoryFilter, setCategoryFilter] = useState("Todos");
-
-  // Load jsPDF dynamically
-  useEffect(() => {
-    const loadScript = (src) => {
-      return new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = src;
-        script.onload = resolve;
-        script.onerror = reject;
-        document.body.appendChild(script);
-      });
-    };
-
-    Promise.all([
-      loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"),
-      loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js")
-    ]).then(() => {
-      console.log("PDF libraries loaded");
-    }).catch(err => console.error("Failed to load PDF libs", err));
-  }, []);
-
-  // Filtering Logic
-  const filteredProducts = useMemo(() => {
-    return products.filter(product => {
-      const matchesSearch = 
-        product.desc.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        product.id.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesCategory = categoryFilter === "Todos" || product.category === categoryFilter;
-
-      return matchesSearch && matchesCategory;
-    });
-  }, [searchTerm, categoryFilter]);
-
-  // Pricing Logic
-  const getActivePrice = (product, quantity) => {
-    // If we have a box quantity and the user meets it
-    if (product.boxQty > 1 && quantity >= product.boxQty) {
-      return { price: product.priceBox, type: 'box' };
-    }
-    return { price: product.priceFrac, type: 'frac' };
-  };
-
-  // Cart Actions
-  const addToCart = (product) => {
-    setCart(prev => {
-      const existing = prev.find(item => item.id === product.id);
-      if (existing) {
-        return prev.map(item => 
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+        // --- ÍCONES (SVG Components) ---
+        const IconWrapper = ({ children, size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                {children}
+            </svg>
         );
-      }
-      return [...prev, { ...product, quantity: 1 }];
-    });
-    setIsCartOpen(true);
-  };
 
-  const updateQuantity = (id, newQty) => {
-    if (newQty < 1) return;
-    setCart(prev => prev.map(item => item.id === id ? { ...item, quantity: newQty } : item));
-  };
+        const ShoppingCart = (props) => <IconWrapper {...props}><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></IconWrapper>;
+        const Search = (props) => <IconWrapper {...props}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></IconWrapper>;
+        const Plus = (props) => <IconWrapper {...props}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></IconWrapper>;
+        const Minus = (props) => <IconWrapper {...props}><line x1="5" y1="12" x2="19" y2="12"/></IconWrapper>;
+        const Trash2 = (props) => <IconWrapper {...props}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></IconWrapper>;
+        const X = (props) => <IconWrapper {...props}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></IconWrapper>;
+        const Package = (props) => <IconWrapper {...props}><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></IconWrapper>;
+        const Tag = (props) => <IconWrapper {...props}><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></IconWrapper>;
+        const Info = (props) => <IconWrapper {...props}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></IconWrapper>;
+        const Check = (props) => <IconWrapper {...props}><polyline points="20 6 9 17 4 12"/></IconWrapper>;
+        const AlertCircle = (props) => <IconWrapper {...props}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></IconWrapper>;
+        const FileText = (props) => <IconWrapper {...props}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></IconWrapper>;
+        const Download = (props) => <IconWrapper {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></IconWrapper>;
+        const MessageCircle = (props) => <IconWrapper {...props}><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></IconWrapper>;
+        const Paperclip = (props) => <IconWrapper {...props}><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></IconWrapper>;
 
-  const removeFromCart = (id) => {
-    setCart(prev => prev.filter(item => item.id !== id));
-  };
+        // --- DADOS DOS PRODUTOS ---
+        const rawProducts = [
+            { id: "L0001", desc: "PER. LED ALUM. SOBRE. BRAF. 2M 14X6.5 (M CX100)", priceFrac: 18.85, priceBox: 16.75 },
+            { id: "L0002", desc: "PER. LED ALUM. SOBRE. PREF. 2M 14X6.5 (M CX100)", priceFrac: 20.95, priceBox: 18.62 },
+            { id: "L0003", desc: "PER. LED ALUM. SOBRE. BRAF. 3M 14X6.5 (M CX100)", priceFrac: 28.28, priceBox: 25.14 },
+            { id: "L0004", desc: "PER. LED ALUM. SOBRE. PREF. 3M 14X6.5 (MCX100)", priceFrac: 31.42, priceBox: 27.93 },
+            { id: "L0005", desc: "PER. LED ALUM. EMBUT. BRAF 2M 17.2X6.5 (MCX100)", priceFrac: 19.83, priceBox: 17.63 },
+            { id: "L0006", desc: "PER. LED ALUM. EMBUT. PREF. 2M 17.2X6.5 (MCX100)", priceFrac: 22.04, priceBox: 19.59 },
+            { id: "L0007", desc: "PER. LED ALUM. EMBUT. BRAF. 3M 17.2X6.5 (M CX100)", priceFrac: 29.76, priceBox: 26.45 },
+            { id: "L0008", desc: "PER. LED ALUM. EMBUT. PREF. 3M 17.2X6.5 (MCX100)", priceFrac: 33.07, priceBox: 29.39 },
+            { id: "L0009", desc: "PER. LED ALUM. SOBRE. BRAF. 2M 29.4X9.9 (M CX50)", priceFrac: 34.35, priceBox: 30.54 },
+            { id: "L0010", desc: "PER. LED ALUM. SOBRE. PREF. 2M 29.4X9.9 (M CX50)", priceFrac: 38.17, priceBox: 33.93 },
+            { id: "L0011", desc: "PER. LED ALUM. SOBRE. BRAF. 3M 29.4X9.9 (M CX50)", priceFrac: 51.53, priceBox: 45.80 },
+            { id: "L0012", desc: "PER. LED ALUM. SOBRE. PREF. 3M 29.4X9.9 (M CX50)", priceFrac: 57.25, priceBox: 50.89 },
+            { id: "L0013", desc: "PER. LED ALUM. EMBUT. BRAF. 2M 40x9.9 (M CX50)", priceFrac: 36.15, priceBox: 32.14 },
+            { id: "L0014", desc: "PER. LED ALUM. EMBUT. PREF. 2M 40x9.9 (M CX50)", priceFrac: 40.16, priceBox: 35.70 },
+            { id: "L0015", desc: "PER. LED ALUM. EMBUT. BRAF. 3M 40x9.9 (M CX50)", priceFrac: 54.23, priceBox: 48.21 },
+            { id: "L0016", desc: "PER. LED ALUM. EMBUT. PREF. 3M 40x9.9 (M CX50)", priceFrac: 60.25, priceBox: 53.56 },
+            { id: "L0017", desc: "PER. LED ALUM. SOBRE. CANTO DOIS FACHOS BRAF. 2M 68.7X68.7 (M CX10)", priceFrac: 199.61, priceBox: 177.43 },
+            { id: "L0018", desc: "PER. LED ALUM. SOBRE. CANTO DOIS FACHOS BRAF. 3M 68.7X68.7 (MCX10)", priceFrac: 297.50, priceBox: 264.44 },
+            { id: "L0019", desc: "PER. LED ALUM. EMBUT. RECUADO BRAF. 2M 35.6X22.9 (M CX50)", priceFrac: 57.10, priceBox: 50.75 },
+            { id: "L0020", desc: "PER. LED ALUM. EMBUT. RECUADO PREF. 2M 35.6X22.9 (M CX50)", priceFrac: 63.44, priceBox: 56.39 },
+            { id: "L0021", desc: "PER. LED ALUM. EMBUT. RECUADO BRAF. 3M 35.6X22.9 (M CX50)", priceFrac: 85.65, priceBox: 76.14 },
+            { id: "L0022", desc: "PER. LED ALUM. EMBUT. RECUADO PREF. 3M 35.6X22.9 (M CX50)", priceFrac: 95.16, priceBox: 84.59 },
+            { id: "L0023", desc: "PER. LED ALUM. EMBUT. RECUADO BRAF. 2M 24.2X14.2 (MCX100)", priceFrac: 32.94, priceBox: 29.28 },
+            { id: "L0024", desc: "PER. LED ALUM. EMBUT. RECUADO PREF. 2M 24.2X14.2 (M CX100)", priceFrac: 36.59, priceBox: 32.52 },
+            { id: "L0025", desc: "PER. LED ALUM. EMBUT. RECUADO BRAF. 3M 24.2X14.2 (MCX100)", priceFrac: 49.41, priceBox: 43.92 },
+            { id: "L0026", desc: "PER. LED ALUM. EMBUT. RECUADO PREF. 3M 24.2X14.2 (M CX100)", priceFrac: 54.89, priceBox: 48.79 },
+            { id: "L0027", desc: "PER. LED ALUM. SOBRE. BRAF. 2M 35X35 (M CX20)", priceFrac: 108.80, priceBox: 96.71 },
+            { id: "L0028", desc: "PER. LED ALUM. SOBRE. PREF. 2M 35X35 (M CX20)", priceFrac: 120.88, priceBox: 107.45 },
+            { id: "L0029", desc: "PER. LED ALUM. SOBRE. BRAF. 3M 35X35 (M CX20)", priceFrac: 163.21, priceBox: 145.07 },
+            { id: "L0030", desc: "PER. LED ALUM. SOBRE. PREF. 3M 35X35 (M CX20)", priceFrac: 181.33, priceBox: 161.18 },
+            { id: "L0031", desc: "PER. LED ALUM. EMBUT. BRAF. 2M 50.4X35 (MCX20)", priceFrac: 112.60, priceBox: 100.09 },
+            { id: "L0032", desc: "PER. LED ALUM. EMBUT. PREF. 2M 50.4X35 (M CX24)", priceFrac: 125.12, priceBox: 111.22 },
+            { id: "L0033", desc: "PER. LED ALUM. EMBUT. BRAF. 3M 50.4X35 (M CX24)", priceFrac: 168.91, priceBox: 150.14 },
+            { id: "L0034", desc: "PER. LED ALUM. EMBUT. PREF. 3M 50.4X35 (M CX24)", priceFrac: 187.68, priceBox: 166.82 },
+            { id: "L0035", desc: "PER. LED ALUM. EMBUT. PISO PRA. 2M 20X15 (M CX40)", priceFrac: 71.91, priceBox: 63.92 },
+            { id: "L0036", desc: "PER. LED ALUM. EMBUT. PISO PRA. 3M 20X15 (M CX40)", priceFrac: 107.70, priceBox: 95.73 },
+            { id: "L0037", desc: "PER. LED ALUM. EMBUT. BRAF. 2M 65X34.7 (MCX20)", priceFrac: 130.72, priceBox: 116.20 },
+            { id: "L0038", desc: "PER. LED ALUM. EMBUT. PREF. 2M 65X34.7 (M CX20)", priceFrac: 145.24, priceBox: 129.10 },
+            { id: "L0039", desc: "PER. LED ALUM. EMBUT. BRAF. 3M 65X34.7 (MCX20)", priceFrac: 196.09, priceBox: 174.30 },
+            { id: "L0040", desc: "PER. LED ALUM. EMBUT. PREF. 3M 65X34.7 (M CX20)", priceFrac: 217.88, priceBox: 193.67 },
+            { id: "L0041", desc: "PER. LED ALUM. SOBRE. BRAF. 2M 50X34.7 (MCX20)", priceFrac: 130.41, priceBox: 115.92 },
+            { id: "L0042", desc: "PER. LED ALUM. SOBRE. PREF. 2M 50X34.7 (M CX20)", priceFrac: 144.89, priceBox: 128.79 },
+            { id: "L0043", desc: "PER. LED ALUM. SOBRE. BRAF. 3M 50X34.7 (MCX20)", priceFrac: 195.89, priceBox: 174.12 },
+            { id: "L0044", desc: "PER. LED ALUM. SOBRE. PREF. 3M 50X34.7 (MCX20)", priceFrac: 217.65, priceBox: 193.46 },
+            { id: "L0045", desc: "PER. LED ALUM. EMBUT. BRAF. 2M 30.2X9.6 (MCX50)", priceFrac: 21.65, priceBox: 19.24 },
+            { id: "L0046", desc: "PER. LED ALUM. EMBUT. PREF. 2M 30.2X9.6 (M CX50)", priceFrac: 24.01, priceBox: 21.34 },
+            { id: "L0047", desc: "PER. LED ALUM. EMBUT. BRAF. 3M 30.2X9.6 (MCX50)", priceFrac: 32.48, priceBox: 28.87 },
+            { id: "L0048", desc: "PER. LED ALUM. EMBUT. PREF. 3M 30.2X9.6 (M CX50)", priceFrac: 32.67, priceBox: 29.04 },
+            { id: "L0049", desc: "PER. LED ALUM. SOBRE. BRAF. 2M 22.8X9.6 (M CX50)", priceFrac: 19.73, priceBox: 17.54 },
+            { id: "L0050", desc: "PER. LED ALUM. SOBRE. PREF. 2M 22.8X9.6 (MCX100)", priceFrac: 21.92, priceBox: 19.48 },
+            { id: "L0051", desc: "PER. LED ALUM. SOBRE. BRAF. 3M 22.8X9.6 (M CX50)", priceFrac: 29.59, priceBox: 26.30 },
+            { id: "L0052", desc: "PER. LED ALUM. SOBRE. PREF. 3M 22.8X9.6 (MCX100)", priceFrac: 33.00, priceBox: 29.33 },
+            { id: "L0053", desc: "PER. LED ALUM. SOBRE. E PENDENTE BRAF. 2M 23X26.7 (M CX25)", priceFrac: 49.28, priceBox: 43.80 },
+            { id: "L0054", desc: "PER. LED ALUM. SOBRE. E PENDENTE PREF. 2M 23X26.7 (M CX80)", priceFrac: 54.76, priceBox: 48.67 },
+            { id: "L0055", desc: "PER. LED ALUM. SOBRE. E PENDENTE BRAF. 3M 23X26.7 (M CX25)", priceFrac: 73.91, priceBox: 65.70 },
+            { id: "L0056", desc: "PER. LED ALUM. SOBRE. E PENDENTE PREF. 3M 23X26.7 (M CX25)", priceFrac: 82.13, priceBox: 73.00 },
+            { id: "L0057", desc: "PER. LED ALUM. EMBUT. BRAF. 2M 36X26.7 (M CX25)", priceFrac: 57.22, priceBox: 50.86 },
+            { id: "L0058", desc: "PER. LED ALUM. EMBUT. PREF. 2M 36X26.7 (M CX25)", priceFrac: 63.58, priceBox: 56.52 },
+            { id: "L0059", desc: "PER. LED ALUM. EMBUT. BRAF. 3M 36X26.7 (MCX25)", priceFrac: 85.84, priceBox: 76.30 },
+            { id: "L0060", desc: "PER. LED ALUM. EMBUT. PREF. 3M 36X26.7 (M CX25)", priceFrac: 95.37, priceBox: 84.77 },
+            { id: "L0061", desc: "PER. LED ALUM. SOBRE. BRAF. 2M 7.8X9 (M CX100)", priceFrac: 18.36, priceBox: 16.32 },
+            { id: "L0062", desc: "PER. LED ALUM. SOBRE. PREF. 2M 7.8X9 (M CX100)", priceFrac: 20.41, priceBox: 18.14 },
+            { id: "L0063", desc: "PER. LED ALUM. SOBRE. BRAF. 3M 7.8X9 (M CX100)", priceFrac: 27.56, priceBox: 24.50 },
+            { id: "L0064", desc: "PER. LED ALUM. SOBRE. PREF. 3M 7.8X9 (M CX50)", priceFrac: 33.68, priceBox: 29.94 },
+            { id: "L0065", desc: "PER. LED ALUM. EMBUT. BRAF. 2M 11.2X9 (M CX100)", priceFrac: 19.65, priceBox: 17.46 },
+            { id: "L0066", desc: "PER. LED ALUM. EMBUT. PREF. 2M 11.2X9 (MCX100)", priceFrac: 21.83, priceBox: 19.40 },
+            { id: "L0067", desc: "PER. LED ALUM. EMBUT. BRAF. 3M 11.2X9 (M CX100)", priceFrac: 29.47, priceBox: 26.20 },
+            { id: "L0068", desc: "PER. LED ALUM. EMBUT. PREF. 3M 11.2X9 (M CX100)", priceFrac: 32.75, priceBox: 29.11 },
+            { id: "L0069", desc: "PER. LED ALUM. SOBRE. BRAF. 2M 9.6X12.8 (M CX100)", priceFrac: 20.18, priceBox: 17.94 },
+            { id: "L0070", desc: "PER. LED ALUM. SOBRE. PREF. 2M 9.6X12.8 (MCX100)", priceFrac: 22.40, priceBox: 19.91 },
+            { id: "L0071", desc: "PER. LED ALUM. SOBRE. BRAF. 3M 9.6X12.8 (M CX100)", priceFrac: 30.25, priceBox: 26.89 },
+            { id: "L0072", desc: "PER. LED ALUM. SOBRE. PREF. 3M 9.6X12.8 (M CX100)", priceFrac: 33.61, priceBox: 29.88 },
+            { id: "L0073", desc: "PER. LED ALUM. EMBUT. BRAF. 2M 13.5X12.8 (M CX100)", priceFrac: 22.84, priceBox: 20.30 },
+            { id: "L0074", desc: "PER. LED ALUM. EMBUT. PREF. 2M 13.5X12.8 (MCX100)", priceFrac: 25.38, priceBox: 22.56 },
+            { id: "L0075", desc: "PER. LED ALUM. EMBUT. BRAF. 3M 13.5X12.8 (M CX100)", priceFrac: 34.27, priceBox: 30.46 },
+            { id: "L0076", desc: "PER. LED ALUM. EMBUT. PREF. 3M 13.5X12.8 (MCX100)", priceFrac: 38.07, priceBox: 33.84 },
+            { id: "L0077", desc: "PER. LED ALUM. TRIFACE COM ILUMINACAO BRAF. 2M 20X20.8 (M CX50)", priceFrac: 62.42, priceBox: 55.48 },
+            { id: "L0078", desc: "PER. LED ALUM. TRIFACE COM ILUMINACAO PREF. 2M 20X20.8 (M CX50)", priceFrac: 68.66, priceBox: 61.03 },
+            { id: "L0079", desc: "PER. LED ALUM. TRIFACE COM ILUMINACAO BRAF. 3M 20X20.8 (MCX50)", priceFrac: 93.62, priceBox: 83.22 },
+            { id: "L0080", desc: "PER. LED ALUM. TRIFACE COM ILUMINACAO PREF. 3M 20X20.8 (M CX50)", priceFrac: 104.02, priceBox: 92.46 },
+            { id: "L0081", desc: "PER. LED ALUM. EMBUT. BRAF. 2M 23.8X6.5 (M CX100)", priceFrac: 14.73, priceBox: 13.09 },
+            { id: "L0082", desc: "PER. LED ALUM. EMBUT. PREF. 2M 23.8X6.5 (MCX150)", priceFrac: 16.24, priceBox: 14.43 },
+            { id: "L0083", desc: "PER. LED ALUM. EMBUT. BRAF. 3M 23.8X6.5 (M CX100)", priceFrac: 22.04, priceBox: 19.59 },
+            { id: "L0084", desc: "PER. LED ALUM. EMBUT. PREF. 3M 23.8X6.5 (MCX100)", priceFrac: 24.35, priceBox: 21.65 },
+            { id: "L0085", desc: "PER. LED ALUM. SOBRE. BRAF. 2M 17.4X6.5 (M CX100)", priceFrac: 13.92, priceBox: 12.37 },
+            { id: "L0086", desc: "PER. LED ALUM. SOBRE. PREF. 2M 17.4X6.5 (M CX100)", priceFrac: 15.31, priceBox: 13.61 },
+            { id: "L0087", desc: "PER. LED ALUM. SOBRE. BRAF. 3M 17.4X6.5 (M CX100)", priceFrac: 20.88, priceBox: 18.56 },
+            { id: "L0088", desc: "PER. LED ALUM. SOBRE. PREF. 3M 17.4X6.5 (M CX100)", priceFrac: 22.96, priceBox: 20.41 },
+            { id: "L0089", desc: "PER. LED ALUM. EMBUT. BRAF. 2M 23X6.7 (MCX100)", priceFrac: 20.18, priceBox: 17.94 },
+            { id: "L0090", desc: "PER. LED ALUM. EMBUT. PREF. 2M 23X6.7 (M CX100)", priceFrac: 22.42, priceBox: 19.93 },
+            { id: "L0091", desc: "PER. LED ALUM. EMBUT. BRAF. 3M 23X6.7 (MCX100)", priceFrac: 30.27, priceBox: 26.91 },
+            { id: "L0092", desc: "PER. LED ALUM. EMBUT. PREF. 3M 23X6.6 (M CX100)", priceFrac: 33.63, priceBox: 29.90 },
+            { id: "L0093", desc: "PER. LED ALUM. SOBRE. BRAF. 2M 15.8X6.6 (M CX50)", priceFrac: 18.45, priceBox: 16.40 },
+            { id: "L0094", desc: "PER. LED ALUM. SOBRE. PREF. 2M 15.8X6.6 (M CX50)", priceFrac: 20.51, priceBox: 18.23 },
+            { id: "L0095", desc: "PER. LED ALUM. SOBRE. BRAF. 3M 15.8X6.6 (M CX50)", priceFrac: 27.67, priceBox: 24.60 },
+            { id: "L0096", desc: "PER. LED ALUM. SOBRE. PREF. 3M 15.8X6.6 (M CX50)", priceFrac: 30.74, priceBox: 27.32 },
+            { id: "L0097", desc: "PER. LED ALUM. EMBUT. BRAF. 2M 24.2X14.2 (MCX50)", priceFrac: 20.00, priceBox: 17.78 },
+            { id: "L0098", desc: "PER. LED ALUM. EMBUT. PREF. 2M 24.2X14.2 (M CX50)", priceFrac: 22.29, priceBox: 19.81 },
+            { id: "L0099", desc: "PER. LED ALUM. EMBUT. BRAF. 3M 24.2X14.2 (MCX50)", priceFrac: 30.02, priceBox: 26.68 },
+            { id: "L0100", desc: "PER. LED ALUM. EMBUT. PREF. 3M 24.2X14.2 (M CX50)", priceFrac: 33.43, priceBox: 29.72 },
+            { id: "L0101", desc: "PER. LED ALUM. SOBRE. BRAF. 2M 16.7X13.5 (M CX100)", priceFrac: 20.46, priceBox: 18.19 },
+            { id: "L0102", desc: "PER. LED ALUM. SOBRE. PREF. 2M 16.7X13.5 (M CX100)", priceFrac: 22.29, priceBox: 19.81 },
+            { id: "L0103", desc: "PER. LED ALUM. SOBRE. BRAF. 3M 16.7X13.5 (M CX100)", priceFrac: 31.38, priceBox: 27.90 },
+            { id: "L0104", desc: "PER. LED ALUM. SOBRE. PREF. 3M 16.7X13.5 (M CX50)", priceFrac: 33.43, priceBox: 29.72 },
+            { id: "L0105", desc: "PER. LED ALUM. EMBUT. BRAF. 2M 24.2X18 (M CX50)", priceFrac: 27.84, priceBox: 24.74 },
+            { id: "L0106", desc: "PER. LED ALUM. EMBUT. PREF. 2M 24.2X18 (M CX50)", priceFrac: 30.96, priceBox: 27.52 },
+            { id: "L0107", desc: "PER. LED ALUM. EMBUT. BRAF. 3M 24.2X18 (M CX50)", priceFrac: 41.67, priceBox: 37.04 },
+            { id: "L0108", desc: "PER. LED ALUM. EMBUT. PREF. 3M 24.2X18 (M CX50)", priceFrac: 46.39, priceBox: 41.24 },
+            { id: "L0109", desc: "PER. LED ALUM. SOBRE. CANTO EM V BRAF. 2M 15.4X15.4 (M CX100)", priceFrac: 14.30, priceBox: 12.71 },
+            { id: "L0110", desc: "PER. LED ALUM. SOBRE. CANTO EM V PREF. 2M 15.4X15.4 (M CX100)", priceFrac: 15.90, priceBox: 14.14 },
+            { id: "L0111", desc: "PER. LED ALUM. SOBRE. CANTO EM V BRAF. 3M 15.4X15.4 (M CX100)", priceFrac: 21.46, priceBox: 19.07 },
+            { id: "L0112", desc: "PER. LED ALUM. SOBRE. CANTO EM V PREF. 3M 15.4X15.4 (M CX100)", priceFrac: 23.85, priceBox: 21.20 },
+            { id: "L0113", desc: "PER. LED ALUM. SOBRE. BRAF. 2M 19.6*9.6 (M CX50)", priceFrac: 20.88, priceBox: 18.56 },
+            { id: "L0114", desc: "PER. LED ALUM. SOBRE. PREF. 2M 19.6*9.6 (M CX50)", priceFrac: 23.20, priceBox: 20.62 },
+            { id: "L0115", desc: "PER. LED ALUM. SOBRE. BRAF. 3M 19.6*9.6 (M CX50)", priceFrac: 31.32, priceBox: 27.84 },
+            { id: "L0116", desc: "PER. LED ALUM. SOBRE. PREF. 3M 19.6*9.6 (MCX50)", priceFrac: 34.79, priceBox: 30.93 },
+            { id: "L0117", desc: "PER. LED ALUM. EMBUT. BRAF. 2M 28X9.6 (M CX50)", priceFrac: 22.58, priceBox: 20.07 },
+            { id: "L0118", desc: "PER. LED ALUM. EMBUT. PREF. 2M 28X9.6 (M CX50)", priceFrac: 25.10, priceBox: 22.31 },
+            { id: "L0119", desc: "PER. LED ALUM. EMBUT. BRAF. 3M 28X9.6 (M CX50)", priceFrac: 33.88, priceBox: 30.11 },
+            { id: "L0120", desc: "PER. LED ALUM. EMBUT. PREF. 3M 28X9.6 (MCX50)", priceFrac: 37.63, priceBox: 33.45 },
+            { id: "L0121", desc: "PER. LED ALUM. SOBRE. BRAF. 2M 20X15 (M CX50)", priceFrac: 34.79, priceBox: 30.93 },
+            { id: "L0122", desc: "PER. LED ALUM. SOBRE. PREF. 2M 20X15 (M CX50)", priceFrac: 38.54, priceBox: 34.26 },
+            { id: "L0123", desc: "PER. LED ALUM. SOBRE. BRAF. 3M 20X15 (M CX50)", priceFrac: 52.04, priceBox: 46.26 },
+            { id: "L0124", desc: "PER. LED ALUM. SOBRE. PREF. 3M 20X15 (M CX50)", priceFrac: 57.82, priceBox: 51.39 },
+            { id: "L0125", desc: "PER. LED ALUM. EMBUT. BRAF. 2M 26.8X15 (MCX50)", priceFrac: 36.74, priceBox: 32.66 },
+            { id: "L0126", desc: "PER. LED ALUM. EMBUT. PREF. 2M 26.8X15 (M CX50)", priceFrac: 40.82, priceBox: 36.29 },
+            { id: "L0127", desc: "PER. LED ALUM. EMBUT. BRAF. 3M 26.8X15 (M CX50)", priceFrac: 55.11, priceBox: 48.99 },
+            { id: "L0128", desc: "PER. LED ALUM. EMBUT. PREF. 3M 26.8X15 (M CX50)", priceFrac: 61.24, priceBox: 54.43 },
+            { id: "L0129", desc: "PER. LED ALUM. SOBRE. TROVAO DOIS FACHOS BRAF. 2M 70X40 (M CX10)", priceFrac: 193.34, priceBox: 171.86 },
+            { id: "L0130", desc: "PER. LED ALUM. SOBRE. TROVAO DOIS FACHOS PREF. 2M 70X40 (M CX10)", priceFrac: 212.82, priceBox: 189.18 },
+            { id: "L0131", desc: "PER. LED ALUM. SOBRE. TROVAO DOIS FACHOS BRAF. 3M 70X40 (M CX10)", priceFrac: 289.95, priceBox: 257.73 },
+            { id: "L0132", desc: "PER. LED ALUM. SOBRE. TROVAO DOIS FACHOS PREF. 3M 70X40 (M CX10)", priceFrac: 319.18, priceBox: 283.71 },
+            { id: "L0133", desc: "PER. LED ALUM. EMBUT. NO FRAME DUPLO (GAP) BRAF. 2M 115.2X42 (M CX10)", priceFrac: 162.37, priceBox: 144.33 },
+            { id: "L0135", desc: "PER. LED ALUM. EMBUT. NO FRAME DUPLO (GAP) BRAF. 3M 115.2X42 (M CX10)", priceFrac: 255.15, priceBox: 226.80 },
+            { id: "L0137", desc: "PER. LED ALUM. EMBUT. NO FRAME SIMPLES (GAP) BRAF. 2M 84X39 (M CX10)", priceFrac: 117.14, priceBox: 104.12 },
+            { id: "L0139", desc: "PER. LED ALUM. EMBUT. NO FRAME SIMPLES (GAP) BRAF. 3M 84X39 (M CX10)", priceFrac: 175.13, priceBox: 155.67 },
+            { id: "L0141", desc: "PER. LED ALUM. SOBRE. BRAF. 2M 23X22.5 (M CX50)", priceFrac: 36.57, priceBox: 32.50 },
+            { id: "L0142", desc: "PER. LED ALUM. SOBRE. PREF. 2M 23X22.5 (MCX50)", priceFrac: 40.63, priceBox: 36.11 },
+            { id: "L0143", desc: "PER. LED ALUM. SOBRE. BRAF. 3M 23X22.5 (M CX50)", priceFrac: 54.86, priceBox: 48.76 },
+            { id: "L0144", desc: "PER. LED ALUM. SOBRE. PREF. 3M 23X22.5 (MCX50)", priceFrac: 60.93, priceBox: 54.16 },
+            { id: "L0145", desc: "PER. LED ALUM. SOBRE. BRAF. 2M 16.7X13.5 (M CX100)", priceFrac: 26.68, priceBox: 23.71 },
+            { id: "L0146", desc: "PER. LED ALUM. SOBRE. PREF. 2M 16.7X13.5 (M CX100)", priceFrac: 29.64, priceBox: 26.34 },
+            { id: "L0147", desc: "PER. LED ALUM. SOBRE. BRAF. 3M 16.7X13.5 (M CX100)", priceFrac: 40.01, priceBox: 35.57 },
+            { id: "L0148", desc: "PER. LED ALUM. SOBRE. PREF. 3M 16.7X13.5 (M CX100)", priceFrac: 44.46, priceBox: 39.52 },
+            { id: "L0149", desc: "PER. LED ALUM. EMBUT. BRAF. 2M 23.7X13.5 (M CX100)", priceFrac: 28.55, priceBox: 25.38 },
+            { id: "L0150", desc: "PER. LED ALUM. EMBUT. PREF. 2M 23.7X13.5 (M CX100)", priceFrac: 31.72, priceBox: 28.20 },
+            { id: "L0151", desc: "PER. LED ALUM. EMBUT. BRAF. 3M 23.7X13.5 (M CX100)", priceFrac: 42.83, priceBox: 38.07 },
+            { id: "L0152", desc: "PER. LED ALUM. EMBUT. PREF. 3M 23.7X13.5 (M CX100)", priceFrac: 47.59, priceBox: 42.30 },
+            { id: "L0153", desc: "PER. LED ALUM. EMBUT. NO FRAME SIMPLES (GAP) BRAF. 2M 85X35.1 (M CX10)", priceFrac: 127.58, priceBox: 113.40 },
+            { id: "L0155", desc: "PER. LED ALUM. EMBUT. NO FRAME SIMPLES (GAP) BRAF. 3M 85X35.1 (MCX10)", priceFrac: 190.21, priceBox: 169.07 },
+            { id: "L0157", desc: "PER. LED ALUM. EMBUT. ACR. DIAMANTE 67PCS OURO 2M 43.8X33.3 (CX10)", priceFrac: 208.76, priceBox: 185.57 },
+            { id: "L0158", desc: "PER. LED ALUM. EMBUT. ACR. DIAMANTE 100PCS OURO 3M 43.8X33.3 (CX10)", priceFrac: 309.66, priceBox: 275.26 },
+            { id: "L0159", desc: "PER. LED ALUM. EMBUT. ACR. DIAMANTE 67PCS BRAF. 2M 43.8X33.3 (CX10)", priceFrac: 208.76, priceBox: 185.57 },
+            { id: "L0160", desc: "PER. LED ALUM. EMBUT. ACR. DIAMANTE 67PCS PREF. 2M 43.8X33.3 (CX10)", priceFrac: 208.76, priceBox: 185.57 },
+            { id: "L0161", desc: "PER. LED ALUM. EMBUT. ACR. DIAMANTE 100PCS BRAF. 3M 43.8X33.3 (CX10)", priceFrac: 309.66, priceBox: 275.26 },
+            { id: "L0162", desc: "PER. LED ALUM. EMBUT. ACR. DIAMANTE 100PCS PREF. 3M 43.8X33.3 (CX10)", priceFrac: 309.66, priceBox: 275.26 },
+            { id: "L0163", desc: "PER. LED ALUM. SOBRE. ACR. DIAMANTE 67PCS BRAF. 2M 52.4X35 (M CX10)", priceFrac: 269.07, priceBox: 239.18 },
+            { id: "L0164", desc: "PER. LED ALUM. SOBRE. ACR. DIAMANTE 67PCS PREF. 2M 52.4X35 (M CX10)", priceFrac: 269.07, priceBox: 239.18 },
+            { id: "L0165", desc: "PER. LED ALUM. SOBRE. ACR. DIAMANTE 100PCS BRAF. 3M 52.4X35 (M CX10)", priceFrac: 382.73, priceBox: 340.21 },
+            { id: "L0166", desc: "PER. LED ALUM. SOBRE. ACR. DIAMANTE 100PCS PREF. 3M 52.4X35 (M CX10)", priceFrac: 382.73, priceBox: 340.21 },
+            { id: "L0167", desc: "PER. LED ALUM. EMBUT. PARA FACHADA IP65 BRAF. 2M 24.6X13.5 (M CX50)", priceFrac: 85.95, priceBox: 76.40 },
+            { id: "L0168", desc: "PER. LED ALUM. EMBUT. PARA FACHADA IP65 PREF. 2M 24.6X13.5 (M CX20)", priceFrac: 95.51, priceBox: 84.90 },
+            { id: "L0169", desc: "PER. LED ALUM. EMBUT. PARA FACHADA IP65 BRAF. 3M 24.6X13.5 (MCX50)", priceFrac: 128.74, priceBox: 114.43 },
+            { id: "L0170", desc: "PER. LED ALUM. EMBUT. PARA FACHADA IP65 PREF. 3M 24.3X13.4 (M CX40)", priceFrac: 143.24, priceBox: 127.32 },
+            { id: "L0171", desc: "PER. LED ALUM. SOBRE. PARA FACHADA IP65 BRAF. 2M 17.5X13.5 (M CX50)", priceFrac: 80.72, priceBox: 71.75 },
+            { id: "L0172", desc: "PER. LED ALUM. SOBRE. PARA FACHADA IP65 PREF. 2M 17.5X13.5 (MCX20)", priceFrac: 89.69, priceBox: 79.72 },
+            { id: "L0173", desc: "PER. LED ALUM. SOBRE. PARA FACHADA IP65 BRAF. 3M 17.5X13.5 (M CX50)", priceFrac: 121.08, priceBox: 107.63 },
+            { id: "L0174", desc: "PER. LED ALUM. SOBRE. PARA FACHADA IP65 PREF. 3M 17.5X13.5 (M CX40)", priceFrac: 134.54, priceBox: 119.59 },
+            { id: "L0175", desc: "PER. LED ALUM. CABIDEIRO ELEGANCE PRATA. 2M 29X14.5 (MCX50)", priceFrac: 75.64, priceBox: 67.24 },
+            { id: "L0176", desc: "PER. LED ALUM. CABIDEIRO ELEGANCE PRATA. 3M 29X14.5 (M CX50)", priceFrac: 113.24, priceBox: 100.66 },
+            { id: "L0177", desc: "SUPORTE DE ANEL SUSPENSO DE PER. CABIDEIRO ELEGANCE 29X14.5 (M CX340)", priceFrac: 6.96, priceBox: 6.18 },
+            { id: "L0178", desc: "SUPORTE FIXO DE PER. CABIDEIRO LEGANCE 29X14.5 (M CX340)", priceFrac: 3.71, priceBox: 3.30 },
+            { id: "L0179", desc: "PER. LED ALUM. SOBRE. E SUSPENSO BRAF. 2M 35X45 (M CX20)", priceFrac: 136.85, priceBox: 121.65 },
+            { id: "L0180", desc: "PER. LED ALUM. SOBRE. E SUSPENSO PREF. 2M 35X45 (M CX20)", priceFrac: 151.93, priceBox: 135.05 },
+            { id: "L0181", desc: "PER. LED ALUM. SOBRE. E SUSPENSO BRAF. 3M 35X45 (MCX20)", priceFrac: 205.29, priceBox: 182.48 },
+            { id: "L0182", desc: "PER. LED ALUM. SOBRE, E SUSPENSO PREF. 3M 35X45 (M CX20)", priceFrac: 227.32, priceBox: 202.06 },
+            { id: "L0183", desc: "PER. LED ALUM. SOBRE. E SUSPENSO BRAF. 2M 24.5X40 (M CX20)", priceFrac: 109.02, priceBox: 96.91 },
+            { id: "L0184", desc: "PER. LED ALUM. SOBRE. E SUSPENSO PREF. 2M 24.5X40 (M CX20)", priceFrac: 121.14, priceBox: 107.68 },
+            { id: "L0185", desc: "PER. LED ALUM. SOBRE. E SUSPENSO BRAF. 3M 24.5X40 (M CX20)", priceFrac: 163.53, priceBox: 145.36 },
+            { id: "L0186", desc: "PER. LED ALUM. SOBRE. E SUSPENSO PREF. 3M 24.5X40 (M CX20)", priceFrac: 181.70, priceBox: 161.51 },
+            { id: "L0187", desc: "PER. LED ALUM. RODAPE FINA. BRAF. 2M 10.3X50.2 (M CX40)", priceFrac: 85.05, priceBox: 75.60 },
+            { id: "L0188", desc: "PER. LED ALUM. RODAPE FINA. BRAF. 3M 10.3X50.2 (MCX40)", priceFrac: 127.58, priceBox: 113.40 },
+            { id: "L0189", desc: "PRESILHA PARA PER. RODAPE FINA. BRAF. 3M 9.4X49.6", priceFrac: 2.32, priceBox: 2.06 },
+            { id: "L0190", desc: "TAMPA DIREITA DE PER.RODAPE FINA. BRAF.10.5X50", priceFrac: 5.45, priceBox: 4.84 },
+            { id: "L0191", desc: "TAMPA ESQUERDA DE PER.RODAPE FINA. BRAF. 10.5X50", priceFrac: 5.45, priceBox: 4.84 },
+            { id: "L0192", desc: "JUNÇÃO DE CANTO DE PER.RODAPE FINA. BRAF. 9.6X50.2", priceFrac: 8.35, priceBox: 7.42 },
+            { id: "L0193", desc: "JUNÇÃO DE QUINA DE PER.RODAPE FINA. BRAF. 11.2X50.2", priceFrac: 8.35, priceBox: 7.42 },
+            { id: "L0194", desc: "PER. LED PARA MOVEIS ILUMINACAO DUPLA PRATA 2M 18X8.5 (M CX50)", priceFrac: 43.49, priceBox: 38.66 },
+            { id: "L0195", desc: "PER. LED PARA MÓVEIS ILUMINACAO DUPLA PRATA 3M 18X8.5 (M CX50)", priceFrac: 64.89, priceBox: 57.68 },
+            { id: "L0196", desc: "ACESSÓRIO KIT CABO PENDENTE DE 1 METRO", priceFrac: 9.28, priceBox: 8.25 },
+            { id: "L0197", desc: "ACESSÓRIO KIT CABO PENDENTE DE 2 METRO", priceFrac: 12.76, priceBox: 11.34 },
+            { id: "L0198", desc: "SAMPLE BOARD/ ACESSORIO", priceFrac: 289.95, priceBox: 257.73 },
+            { id: "L0199", desc: "CAIXA MOSTRUÁRIO", priceFrac: 811.85, priceBox: 721.65 },
+            { id: "L0200", desc: "PRESILHA FIXADORA PARA PERFIL ENTRE LARGURA 17~18mm (50PCS/PCT)", priceFrac: 115.98, priceBox: 103.09 },
+            { id: "L0201", desc: "PRESILHA FIXADORA PARA PERFIL ENTRE LARGURA 17~18mm (50PCS/PCT)", priceFrac: 92.79, priceBox: 82.48 },
+            { id: "L0202", desc: "PRESILHA DE INSERIR PARA BASE DE ENCAIXE MENOR 9mm (50PCS/PCT)", priceFrac: 75.39, priceBox: 67.01 },
+            { id: "L0203", desc: "PRESILHA DE INSERIR PARA BASE DE ENCAIXE MENOR 14mm (50PCS/PCT)", priceFrac: 75.39, priceBox: 67.01 },
+            { id: "GL0001", desc: "FERRAMENTA DE INSTALACAO DE FITA LED COM ROLDANAS ROLAMENTOS", priceFrac: 16.88, priceBox: 15.00 },
+            { id: "L0204", desc: "PER. LED ALUM. EMBUT. BRA. 2M 35X20 (M CX20)", priceFrac: 128.98, priceBox: 114.65 },
+            { id: "L0205", desc: "PER. LED ALUM. EMBUT. PRE. 2M 35X20 (M CX20)", priceFrac: 128.98, priceBox: 114.65 },
+            { id: "L0206", desc: "PER. LED ALUM. EMBUT. BRA. 3M 35X20 (M CX20)", priceFrac: 181.33, priceBox: 161.18 },
+            { id: "L0207", desc: "PER. LED ALUM. EMBUT. PRE. 3M 35X20 (M CX20)", priceFrac: 181.33, priceBox: 161.18 },
+            { id: "L0208", desc: "PER. LED ALUM. SOBRE. PREF. 2M 35X35 (MCX10) 2 PONTEIRAS/2 PRESILHAS", priceFrac: 121.50, priceBox: 108.00 },
+            { id: "L0209", desc: "PER. LED ALUM. SOBRE. PREF. 3M 35X35 (M CX10) 2 PONTEIRAS/3 PRESILHAS", priceFrac: 183.60, priceBox: 163.20 },
+            { id: "L0210", desc: "PER. LED ALUM. SOBRE. BRAF. 2M 35X35 (MCX10) 2 PONTEIRAS/2 PRESILHAS", priceFrac: 121.50, priceBox: 108.00 },
+            { id: "L0211", desc: "PER. LED ALUM. SOBRE. BRAF. 3M 35X35 (M CX10) 2 PONTEIRAS/3 PRESILHAS", priceFrac: 183.60, priceBox: 163.20 },
+            { id: "L0212", desc: "PER. LED ALUM. EMBUT. BRAF. 2M 50.4X35 (M CX10) 2 PONTEIRAS/2 PRESILHAS", priceFrac: 145.35, priceBox: 129.20 },
+            { id: "L0213", desc: "PER. LED ALUM. EMBUT. PREF. 2M 50.4X35 (M CX10) 2 PONTEIRAS/2 PRESILHAS", priceFrac: 145.35, priceBox: 129.20 },
+            { id: "L0214", desc: "PER. LED ALUM. EMBUT. BRAF. 3M 50.4X35 (M CX10) 2 PONTEIRAS/3 PRESILHAS", priceFrac: 217.35, priceBox: 193.20 },
+            { id: "L0215", desc: "PER. LED ALUM. EMBUT. PREF. 3M 50.4X35 (M CX10) 2 PONTEIRAS/3 PRESILHAS", priceFrac: 217.35, priceBox: 193.20 },
+            { id: "L0216", desc: "PER. LED ALUM. EMBUT. NO FRAME DUPLO (GAP) BRAF. 2M 115.2X42 (M CX3) 2 PONTEIRAS", priceFrac: 198.00, priceBox: 176.00 },
+            { id: "L0217", desc: "PER. LED ALUM. EMBUT. NO FRAME DUPLO (GAP) BRAF. 3M 115.2X42 (M CX3) 4 PONTEIRAS", priceFrac: 293.40, priceBox: 260.80 },
+        ];
 
-  // Totals
-  const cartTotals = useMemo(() => {
-    let subtotal = 0;
-    let totalItems = 0;
-
-    cart.forEach(item => {
-      const { price } = getActivePrice(item, item.quantity);
-      subtotal += price * item.quantity;
-      totalItems += item.quantity;
-    });
-
-    return { subtotal, totalItems };
-  }, [cart]);
-
-  // Format currency
-  const formatBRL = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-
-  // Generate PDF
-  const handleGeneratePDF = () => {
-    if (!window.jspdf) {
-      alert("A biblioteca de PDF ainda está carregando. Por favor, aguarde alguns segundos e tente novamente.");
-      return;
-    }
-
-    const doc = new window.jspdf.jsPDF();
-    
-    // Header
-    doc.setFillColor(241, 245, 249); // slate-100
-    doc.rect(0, 0, 210, 40, 'F');
-    
-    doc.setFontSize(22);
-    doc.setTextColor(30, 41, 59); // slate-800
-    doc.text("LUMILINE", 14, 20);
-    
-    doc.setFontSize(10);
-    doc.setTextColor(100, 116, 139); // slate-500
-    doc.text("CATÁLOGO", 14, 26);
-
-    doc.setFontSize(10);
-    doc.setTextColor(30, 41, 59);
-    doc.text(`Orçamento gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 14, 35);
-    
-    // Table Data
-    const tableColumn = ["Cód.", "Descrição", "Qtd", "Preço Un.", "Total"];
-    const tableRows = [];
-
-    cart.forEach(item => {
-      const { price, type } = getActivePrice(item, item.quantity);
-      const isBoxPrice = type === 'box';
-      
-      const itemData = [
-        item.id,
-        item.desc,
-        item.quantity,
-        `${formatBRL(price)} ${isBoxPrice ? '(CX)' : ''}`,
-        formatBRL(price * item.quantity)
-      ];
-      tableRows.push(itemData);
-    });
-
-    // Generate Table
-    doc.autoTable({
-      head: [tableColumn],
-      body: tableRows,
-      startY: 45,
-      styles: { fontSize: 9, cellPadding: 3 },
-      headStyles: { fillColor: [37, 99, 235], textColor: 255 }, // blue-600
-      alternateRowStyles: { fillColor: [248, 250, 252] }, // slate-50
-      columnStyles: {
-        0: { fontStyle: 'bold' },
-        3: { halign: 'right' },
-        4: { halign: 'right', fontStyle: 'bold' }
-      }
-    });
-
-    // Final Total
-    const finalY = doc.lastAutoTable.finalY + 10;
-    
-    doc.setFillColor(241, 245, 249);
-    doc.roundedRect(120, finalY - 5, 76, 20, 3, 3, 'F');
-    
-    doc.setFontSize(12);
-    doc.setTextColor(100, 116, 139);
-    doc.text(`Itens:`, 125, finalY + 2);
-    doc.text(`${cartTotals.totalItems}`, 180, finalY + 2, { align: 'right' });
-
-    doc.setFontSize(14);
-    doc.setTextColor(30, 41, 59);
-    doc.setFont(undefined, 'bold');
-    doc.text(`Total:`, 125, finalY + 10);
-    doc.text(`${formatBRL(cartTotals.subtotal)}`, 190, finalY + 10, { align: 'right' });
-    
-    // Footer
-    doc.setFontSize(8);
-    doc.setTextColor(148, 163, 184);
-    doc.text("Lumiline Iluminação - Este documento é um orçamento e não garante reserva de estoque.", 105, 290, { align: 'center' });
-
-    // Save
-    doc.save(`Orcamento_Lumiline_${new Date().toISOString().slice(0,10)}.pdf`);
-  };
-
-  // WhatsApp Checkout
-  const handleWhatsAppCheckout = () => {
-    let message = "*Pedido - Catálogo Lumiline*\n\n";
-    
-    cart.forEach(item => {
-      const { price } = getActivePrice(item, item.quantity);
-      message += `• *${item.quantity}x* ${item.id}\n${item.desc.trim()}\nValor: ${formatBRL(price * item.quantity)}\n\n`;
-    });
-
-    message += `*Total Geral: ${formatBRL(cartTotals.subtotal)}*`;
-
-    const encodedMessage = encodeURIComponent(message);
-    window.open(`https://wa.me/5581994645392?text=${encodedMessage}`, '_blank');
-  };
-
-  return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-800">
-      
-      {/* HEADER */}
-      <header className="sticky top-0 z-30 bg-white shadow-sm border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
-          
-          <div className="flex items-center gap-2">
-            <div className="bg-blue-600 text-white p-2 rounded-lg">
-              <Package size={24} />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold tracking-tight text-slate-900 leading-none">LUMILINE</h1>
-              <span className="text-xs text-slate-500 font-medium tracking-wider">CATÁLOGO</span>
-            </div>
-          </div>
-
-          <div className="flex-1 max-w-lg hidden md:block">
-            <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search size={18} className="text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-              </div>
-              <input
-                type="text"
-                placeholder="Buscar código (L0001) ou descrição..."
-                className="block w-full pl-10 pr-3 py-2 border border-slate-200 rounded-full leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-all shadow-sm"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <button 
-            onClick={() => setIsCartOpen(true)}
-            className="relative p-2 text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
-          >
-            <ShoppingCart size={24} />
-            {cartTotals.totalItems > 0 && (
-              <span className="absolute top-0 right-0 block h-5 w-5 rounded-full ring-2 ring-white bg-red-500 text-white text-xs font-bold text-center leading-5">
-                {cart.length}
-              </span>
-            )}
-          </button>
-        </div>
-
-        {/* Mobile Search Bar */}
-        <div className="md:hidden px-4 pb-4">
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search size={18} className="text-slate-400" />
-            </div>
-            <input
-              type="text"
-              placeholder="Buscar produto..."
-              className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg leading-5 bg-white placeholder-slate-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-        </div>
-      </header>
-
-      {/* MAIN CONTENT */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        // --- LÓGICA E COMPONENTES ---
         
-        {/* FILTERS */}
-        <div className="mb-8 flex flex-wrap gap-2">
-          {["Todos", "Embutir", "Sobrepor", "Acessórios"].map(cat => (
-            <button
-              key={cat}
-              onClick={() => setCategoryFilter(cat)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                categoryFilter === cat 
-                  ? "bg-slate-800 text-white shadow-md" 
-                  : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
+        // Helper para extrair quantidade da caixa
+        const getBoxQuantity = (description) => {
+            const match = description.match(/\(\s*M?\s*CX\s*(\d+)\s*\)/i) || description.match(/\(\s*CX\s*(\d+)\s*\)/i);
+            return match ? parseInt(match[1], 10) : null;
+        };
 
-        {/* PRODUCTS GRID */}
-        {filteredProducts.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-2xl shadow-sm border border-dashed border-slate-300">
-            <Search size={48} className="mx-auto text-slate-300 mb-4" />
-            <h3 className="text-lg font-medium text-slate-900">Nenhum produto encontrado</h3>
-            <p className="text-slate-500">Tente buscar por outro código ou termo.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredProducts.map(product => (
-              <ProductCard key={product.id} product={product} onAdd={addToCart} />
-            ))}
-          </div>
-        )}
-      </main>
+        const products = rawProducts.map(p => ({
+            ...p,
+            boxQty: getBoxQuantity(p.desc) || 1,
+            category: p.desc.includes("EMBUT") ? "Embutir" : p.desc.includes("SOBRE") ? "Sobrepor" : "Acessórios"
+        }));
 
-      {/* CART SLIDEOVER */}
-      {isCartOpen && (
-        <div className="fixed inset-0 z-50 overflow-hidden">
-          <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity" onClick={() => setIsCartOpen(false)} />
-          <div className="absolute inset-y-0 right-0 pl-10 max-w-full flex">
-            <div className="w-screen max-w-md bg-white shadow-2xl flex flex-col h-full transform transition-transform">
-              
-              <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-                <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                  <ShoppingCart size={20} />
-                  Carrinho de Orçamento
-                </h2>
-                <button onClick={() => setIsCartOpen(false)} className="text-slate-400 hover:text-slate-600">
-                  <X size={24} />
-                </button>
-              </div>
+        function LumilineCatalog() {
+            const [searchTerm, setSearchTerm] = useState("");
+            const [cart, setCart] = useState([]);
+            const [isCartOpen, setIsCartOpen] = useState(false);
+            const [categoryFilter, setCategoryFilter] = useState("Todos");
+            const [showWhatsAppInstructions, setShowWhatsAppInstructions] = useState(false);
 
-              <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                {cart.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full text-slate-400 space-y-4">
-                    <div className="p-4 bg-slate-50 rounded-full">
-                       <ShoppingCart size={48} className="opacity-50" />
-                    </div>
-                    <p className="text-center">Seu carrinho está vazio.</p>
-                    <button 
-                      onClick={() => setIsCartOpen(false)}
-                      className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      Ver Produtos
-                    </button>
-                  </div>
-                ) : (
-                  cart.map(item => {
+            // Carregar jsPDF
+            useEffect(() => {
+                // Como estamos usando CDN no head, jsPDF já deve estar disponível, mas garantimos aqui
+                if (window.jspdf) {
+                    console.log("PDF libraries loaded");
+                }
+            }, []);
+
+            const filteredProducts = useMemo(() => {
+                return products.filter(product => {
+                    const matchesSearch = 
+                        product.desc.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                        product.id.toLowerCase().includes(searchTerm.toLowerCase());
+                    const matchesCategory = categoryFilter === "Todos" || product.category === categoryFilter;
+                    return matchesSearch && matchesCategory;
+                });
+            }, [searchTerm, categoryFilter]);
+
+            const getActivePrice = (product, quantity) => {
+                if (product.boxQty > 1 && quantity >= product.boxQty) {
+                    return { price: product.priceBox, type: 'box' };
+                }
+                return { price: product.priceFrac, type: 'frac' };
+            };
+
+            const addToCart = (product) => {
+                setCart(prev => {
+                    const existing = prev.find(item => item.id === product.id);
+                    if (existing) {
+                        return prev.map(item => 
+                            item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+                        );
+                    }
+                    return [...prev, { ...product, quantity: 1 }];
+                });
+                setIsCartOpen(true);
+            };
+
+            const updateQuantity = (id, newQty) => {
+                if (newQty < 1) return;
+                setCart(prev => prev.map(item => item.id === id ? { ...item, quantity: newQty } : item));
+            };
+
+            const removeFromCart = (id) => {
+                setCart(prev => prev.filter(item => item.id !== id));
+            };
+
+            const cartTotals = useMemo(() => {
+                let subtotal = 0;
+                let totalItems = 0;
+                cart.forEach(item => {
+                    const { price } = getActivePrice(item, item.quantity);
+                    subtotal += price * item.quantity;
+                    totalItems += item.quantity;
+                });
+                return { subtotal, totalItems };
+            }, [cart]);
+
+            const formatBRL = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+
+            const handleGeneratePDF = () => {
+                if (!window.jspdf) {
+                    alert("A biblioteca de PDF ainda está carregando. Por favor, aguarde alguns segundos e tente novamente.");
+                    return;
+                }
+
+                const doc = new window.jspdf.jsPDF();
+                
+                // Cabeçalho
+                doc.setFillColor(241, 245, 249); // slate-100
+                doc.rect(0, 0, 210, 40, 'F');
+                
+                doc.setFontSize(22);
+                doc.setTextColor(30, 41, 59); // slate-800
+                doc.text("LUMILINE", 14, 20);
+                
+                doc.setFontSize(10);
+                doc.setTextColor(100, 116, 139); // slate-500
+                doc.text("CATÁLOGO", 14, 26);
+
+                doc.setFontSize(10);
+                doc.setTextColor(30, 41, 59);
+                doc.text(`Orçamento gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 14, 35);
+                
+                // Tabela
+                const tableColumn = ["Cód.", "Descrição", "Qtd", "Preço Un.", "Total"];
+                const tableRows = [];
+
+                cart.forEach(item => {
                     const { price, type } = getActivePrice(item, item.quantity);
                     const isBoxPrice = type === 'box';
-                    const nextThreshold = item.boxQty - item.quantity;
-                    
-                    return (
-                      <div key={item.id} className="flex flex-col bg-white border border-slate-100 rounded-xl shadow-sm p-4 hover:border-blue-100 transition-colors">
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <span className="inline-block px-2 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-600 mb-1">
-                              {item.id}
-                            </span>
-                            <h3 className="text-sm font-medium text-slate-800 leading-snug line-clamp-2">
-                              {item.desc}
-                            </h3>
-                          </div>
-                          <button 
-                            onClick={() => removeFromCart(item.id)}
-                            className="text-slate-300 hover:text-red-500 p-1 -mt-1 -mr-1"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                    const itemData = [
+                        item.id,
+                        item.desc,
+                        item.quantity,
+                        `${formatBRL(price)} ${isBoxPrice ? '(CX)' : ''}`,
+                        formatBRL(price * item.quantity)
+                    ];
+                    tableRows.push(itemData);
+                });
+
+                doc.autoTable({
+                    head: [tableColumn],
+                    body: tableRows,
+                    startY: 45,
+                    styles: { fontSize: 9, cellPadding: 3 },
+                    headStyles: { fillColor: [37, 99, 235], textColor: 255 }, // blue-600
+                    alternateRowStyles: { fillColor: [248, 250, 252] }, // slate-50
+                    columnStyles: {
+                        0: { fontStyle: 'bold' },
+                        3: { halign: 'right' },
+                        4: { halign: 'right', fontStyle: 'bold' }
+                    }
+                });
+
+                // Total Final
+                const finalY = doc.lastAutoTable.finalY + 10;
+                doc.setFillColor(241, 245, 249);
+                doc.roundedRect(120, finalY - 5, 76, 20, 3, 3, 'F');
+                
+                doc.setFontSize(12);
+                doc.setTextColor(100, 116, 139);
+                doc.text(`Itens:`, 125, finalY + 2);
+                doc.text(`${cartTotals.totalItems}`, 180, finalY + 2, { align: 'right' });
+
+                doc.setFontSize(14);
+                doc.setTextColor(30, 41, 59);
+                doc.setFont(undefined, 'bold');
+                doc.text(`Total:`, 125, finalY + 10);
+                doc.text(`${formatBRL(cartTotals.subtotal)}`, 190, finalY + 10, { align: 'right' });
+                
+                // Rodapé
+                doc.setFontSize(8);
+                doc.setTextColor(148, 163, 184);
+                doc.text("Lumiline Iluminação - Este documento é um orçamento e não garante reserva de estoque.", 105, 290, { align: 'center' });
+
+                doc.save(`Orcamento_Lumiline_${new Date().toISOString().slice(0,10)}.pdf`);
+            };
+
+            const handleWhatsAppWithPDF = () => {
+                if (!window.jspdf) {
+                    alert("A biblioteca de PDF ainda está carregando. Tente novamente em alguns segundos.");
+                    return;
+                }
+                handleGeneratePDF();
+                const message = encodeURIComponent("Olá! Baixei o PDF do meu pedido e estou enviando em anexo para conferência.");
+                window.open(`https://wa.me/5581994645392?text=${message}`, '_blank');
+                setShowWhatsAppInstructions(true);
+            };
+
+            return (
+                <div className="min-h-screen bg-slate-50 font-sans text-slate-800">
+                    <header className="sticky top-0 z-30 bg-white shadow-sm border-b border-slate-200">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-2">
+                                <div className="bg-blue-600 text-white p-2 rounded-lg">
+                                    <Package size={24} />
+                                </div>
+                                <div>
+                                    <h1 className="text-xl font-bold tracking-tight text-slate-900 leading-none">LUMILINE</h1>
+                                    <span className="text-xs text-slate-500 font-medium tracking-wider">CATÁLOGO</span>
+                                </div>
+                            </div>
+                            <div className="flex-1 max-w-lg hidden md:block">
+                                <div className="relative group">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <Search size={18} className="text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        placeholder="Buscar código (L0001) ou descrição..."
+                                        className="block w-full pl-10 pr-3 py-2 border border-slate-200 rounded-full leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-all shadow-sm"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                            <button onClick={() => setIsCartOpen(true)} className="relative p-2 text-slate-600 hover:bg-slate-100 rounded-full transition-colors">
+                                <ShoppingCart size={24} />
+                                {cartTotals.totalItems > 0 && (
+                                    <span className="absolute top-0 right-0 block h-5 w-5 rounded-full ring-2 ring-white bg-red-500 text-white text-xs font-bold text-center leading-5">
+                                        {cart.length}
+                                    </span>
+                                )}
+                            </button>
+                        </div>
+                        <div className="md:hidden px-4 pb-4">
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <Search size={18} className="text-slate-400" />
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="Buscar produto..."
+                                    className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg leading-5 bg-white placeholder-slate-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                    </header>
+
+                    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                        <div className="mb-8 flex flex-wrap gap-2">
+                            {["Todos", "Embutir", "Sobrepor", "Acessórios"].map(cat => (
+                                <button
+                                    key={cat}
+                                    onClick={() => setCategoryFilter(cat)}
+                                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                                        categoryFilter === cat 
+                                        ? "bg-slate-800 text-white shadow-md" 
+                                        : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+                                    }`}
+                                >
+                                    {cat}
+                                </button>
+                            ))}
                         </div>
 
-                        <div className="mt-3 flex items-end justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="flex items-center border border-slate-200 rounded-lg">
-                              <button 
-                                onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                                className="p-2 hover:bg-slate-50 text-slate-600"
-                              >
-                                <Minus size={14} />
-                              </button>
-                              <input
-                                type="number"
-                                min="1"
-                                value={item.quantity}
-                                onChange={(e) => {
-                                  const val = parseInt(e.target.value);
-                                  if (!isNaN(val) && val >= 1) {
-                                    updateQuantity(item.id, val);
-                                  }
-                                }}
-                                className="w-14 text-center text-sm font-semibold border-x border-slate-200 py-2 focus:outline-none focus:bg-slate-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                              />
-                              <button 
-                                onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                                className="p-2 hover:bg-slate-50 text-slate-600"
-                              >
-                                <Plus size={14} />
-                              </button>
+                        {filteredProducts.length === 0 ? (
+                            <div className="text-center py-20 bg-white rounded-2xl shadow-sm border border-dashed border-slate-300">
+                                <Search size={48} className="mx-auto text-slate-300 mb-4" />
+                                <h3 className="text-lg font-medium text-slate-900">Nenhum produto encontrado</h3>
+                                <p className="text-slate-500">Tente buscar por outro código ou termo.</p>
                             </div>
-                            <div className="text-xs text-slate-500">
-                              unid.
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                {filteredProducts.map(product => (
+                                    <ProductCard key={product.id} product={product} onAdd={addToCart} formatBRL={formatBRL} />
+                                ))}
                             </div>
-                          </div>
-                          
-                          <div className="text-right">
-                             <div className="text-lg font-bold text-slate-900">
-                               {formatBRL(price * item.quantity)}
-                             </div>
-                             <div className={`text-xs flex items-center justify-end gap-1 ${isBoxPrice ? 'text-green-600 font-medium' : 'text-slate-500'}`}>
-                               {isBoxPrice ? (
-                                 <><Tag size={10} /> Preço Atacado ({formatBRL(price)})</>
-                               ) : (
-                                 <span>{formatBRL(price)} / un</span>
-                               )}
-                             </div>
-                          </div>
+                        )}
+                    </main>
+
+                    {isCartOpen && (
+                        <div className="fixed inset-0 z-50 overflow-hidden">
+                            <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity" onClick={() => setIsCartOpen(false)} />
+                            <div className="absolute inset-y-0 right-0 pl-10 max-w-full flex">
+                                <div className="w-screen max-w-md bg-white shadow-2xl flex flex-col h-full transform transition-transform">
+                                    <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                                        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                            <ShoppingCart size={20} />
+                                            Carrinho de Orçamento
+                                        </h2>
+                                        <button onClick={() => setIsCartOpen(false)} className="text-slate-400 hover:text-slate-600">
+                                            <X size={24} />
+                                        </button>
+                                    </div>
+
+                                    <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                                        {cart.length === 0 ? (
+                                            <div className="flex flex-col items-center justify-center h-full text-slate-400 space-y-4">
+                                                <div className="p-4 bg-slate-50 rounded-full">
+                                                    <ShoppingCart size={48} className="opacity-50" />
+                                                </div>
+                                                <p className="text-center">Seu carrinho está vazio.</p>
+                                                <button onClick={() => setIsCartOpen(false)} className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                                    Ver Produtos
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            cart.map(item => {
+                                                const { price, type } = getActivePrice(item, item.quantity);
+                                                const isBoxPrice = type === 'box';
+                                                const nextThreshold = item.boxQty - item.quantity;
+                                                
+                                                return (
+                                                    <div key={item.id} className="flex flex-col bg-white border border-slate-100 rounded-xl shadow-sm p-4 hover:border-blue-100 transition-colors">
+                                                        <div className="flex justify-between items-start mb-2">
+                                                            <div>
+                                                                <span className="inline-block px-2 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-600 mb-1">{item.id}</span>
+                                                                <h3 className="text-sm font-medium text-slate-800 leading-snug line-clamp-2">{item.desc}</h3>
+                                                            </div>
+                                                            <button onClick={() => removeFromCart(item.id)} className="text-slate-300 hover:text-red-500 p-1 -mt-1 -mr-1">
+                                                                <Trash2 size={16} />
+                                                            </button>
+                                                        </div>
+                                                        <div className="mt-3 flex items-end justify-between">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="flex items-center border border-slate-200 rounded-lg">
+                                                                    <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="p-2 hover:bg-slate-50 text-slate-600">
+                                                                        <Minus size={14} />
+                                                                    </button>
+                                                                    <input
+                                                                        type="number"
+                                                                        min="1"
+                                                                        value={item.quantity}
+                                                                        onChange={(e) => {
+                                                                            const val = parseInt(e.target.value);
+                                                                            if (!isNaN(val) && val >= 1) updateQuantity(item.id, val);
+                                                                        }}
+                                                                        className="w-14 text-center text-sm font-semibold border-x border-slate-200 py-2 focus:outline-none focus:bg-slate-50 bg-transparent"
+                                                                    />
+                                                                    <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="p-2 hover:bg-slate-50 text-slate-600">
+                                                                        <Plus size={14} />
+                                                                    </button>
+                                                                </div>
+                                                                <div className="text-xs text-slate-500">unid.</div>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <div className="text-lg font-bold text-slate-900">{formatBRL(price * item.quantity)}</div>
+                                                                <div className={`text-xs flex items-center justify-end gap-1 ${isBoxPrice ? 'text-green-600 font-medium' : 'text-slate-500'}`}>
+                                                                    {isBoxPrice ? (
+                                                                        <span><Tag size={10} className="inline mr-1"/>Preço Atacado ({formatBRL(price)})</span>
+                                                                    ) : (
+                                                                        <span>{formatBRL(price)} / un</span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        {!isBoxPrice && item.boxQty > 1 && (
+                                                            <div className="mt-3 bg-blue-50 rounded-lg p-2 flex items-center gap-2 text-xs text-blue-700">
+                                                                <Info size={14} className="flex-shrink-0" />
+                                                                <span>Adicione <b>+{nextThreshold}</b> p/ pagar <b>{formatBRL(item.priceBox)}</b> (Caixa Fechada)</span>
+                                                            </div>
+                                                        )}
+                                                        {isBoxPrice && (
+                                                            <div className="mt-3 bg-green-50 rounded-lg p-2 flex items-center gap-2 text-xs text-green-700 border border-green-100">
+                                                                <Check size={14} className="flex-shrink-0" />
+                                                                <span>Desconto de Caixa Fechada aplicado!</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })
+                                        )}
+                                    </div>
+
+                                    {cart.length > 0 && (
+                                        <div className="bg-white border-t border-slate-200 p-6 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] space-y-3">
+                                            <div className="space-y-2 mb-4">
+                                                <div className="flex justify-between text-slate-500 text-sm">
+                                                    <span>Itens</span>
+                                                    <span>{cartTotals.totalItems}</span>
+                                                </div>
+                                                <div className="flex justify-between text-xl font-bold text-slate-900">
+                                                    <span>Total Estimado</span>
+                                                    <span>{formatBRL(cartTotals.subtotal)}</span>
+                                                </div>
+                                                <p className="text-xs text-slate-400 text-right">Impostos podem ser calculados no faturamento.</p>
+                                            </div>
+                                            <div className="grid grid-cols-1 gap-3">
+                                                <button onClick={handleGeneratePDF} className="w-full bg-slate-100 text-slate-700 py-3 rounded-xl font-bold hover:bg-slate-200 active:bg-slate-300 transition-all flex items-center justify-center gap-2">
+                                                    <FileText size={20} />
+                                                    Baixar Orçamento (PDF)
+                                                </button>
+                                                <button onClick={handleWhatsAppWithPDF} className="w-full bg-green-500 text-white py-3.5 rounded-xl font-bold text-lg hover:bg-green-600 active:bg-green-700 transition-all shadow-lg shadow-green-200 flex items-center justify-center gap-2">
+                                                    <MessageCircle size={24} />
+                                                    Enviar Pedido (WhatsApp)
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         </div>
+                    )}
 
-                        {/* Progress Bar for Box Price */}
-                        {!isBoxPrice && item.boxQty > 1 && (
-                          <div className="mt-3 bg-blue-50 rounded-lg p-2 flex items-center gap-2 text-xs text-blue-700">
-                            <Info size={14} className="flex-shrink-0" />
-                            <span>Adicione <b>+{nextThreshold}</b> p/ pagar <b>{formatBRL(item.priceBox)}</b> (Caixa Fechada)</span>
-                          </div>
-                        )}
-                         {isBoxPrice && (
-                          <div className="mt-3 bg-green-50 rounded-lg p-2 flex items-center gap-2 text-xs text-green-700 border border-green-100">
-                            <Check size={14} className="flex-shrink-0" />
-                            <span>Desconto de Caixa Fechada aplicado!</span>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-
-              {cart.length > 0 && (
-                <div className="bg-white border-t border-slate-200 p-6 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] space-y-3">
-                  <div className="space-y-2 mb-4">
-                    <div className="flex justify-between text-slate-500 text-sm">
-                      <span>Itens</span>
-                      <span>{cartTotals.totalItems}</span>
-                    </div>
-                    <div className="flex justify-between text-xl font-bold text-slate-900">
-                      <span>Total Estimado</span>
-                      <span>{formatBRL(cartTotals.subtotal)}</span>
-                    </div>
-                    <p className="text-xs text-slate-400 text-right">Impostos podem ser calculados no faturamento.</p>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 gap-3">
-                    <button 
-                      onClick={handleGeneratePDF}
-                      className="w-full bg-slate-100 text-slate-700 py-3 rounded-xl font-bold hover:bg-slate-200 active:bg-slate-300 transition-all flex items-center justify-center gap-2"
-                    >
-                      <FileText size={20} />
-                      Baixar Orçamento (PDF)
-                    </button>
-                    
-                    <button 
-                      onClick={handleWhatsAppCheckout}
-                      className="w-full bg-green-500 text-white py-3.5 rounded-xl font-bold text-lg hover:bg-green-600 active:bg-green-700 transition-all shadow-lg shadow-green-200 flex items-center justify-center gap-2"
-                    >
-                      <MessageCircle size={24} />
-                      Enviar Pedido (WhatsApp)
-                    </button>
-                  </div>
+                    {showWhatsAppInstructions && (
+                        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+                            <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 space-y-4 animate-in fade-in zoom-in duration-200">
+                                <div className="text-center space-y-2">
+                                    <div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-green-600 mb-3">
+                                        <MessageCircle size={28} />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-slate-900">Quase lá!</h3>
+                                    <p className="text-slate-500 text-sm">O PDF do pedido foi baixado automaticamente.</p>
+                                </div>
+                                <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 space-y-3">
+                                    <div className="flex items-start gap-3">
+                                        <div className="bg-blue-100 text-blue-700 rounded-full p-1 mt-0.5"><Download size={14} /></div>
+                                        <p className="text-sm text-slate-700">1. Verifique seus downloads: <b>Orcamento_Lumiline...pdf</b></p>
+                                    </div>
+                                    <div className="flex items-start gap-3">
+                                        <div className="bg-green-100 text-green-700 rounded-full p-1 mt-0.5"><Paperclip size={14} /></div>
+                                        <p className="text-sm text-slate-700">2. Na conversa do WhatsApp que abriu, clique no clipe (anexo) e envie este arquivo.</p>
+                                    </div>
+                                </div>
+                                <button onClick={() => setShowWhatsAppInstructions(false)} className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-slate-800 transition-colors">
+                                    Entendi, já enviei
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+            );
+        }
 
-// Subcomponent: Product Card
-function ProductCard({ product, onAdd }) {
-  const formatBRL = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-  const isPresilha = product.desc.trim().toUpperCase().startsWith("PRESILHA");
+        function ProductCard({ product, onAdd, formatBRL }) {
+            const isPresilha = product.desc.trim().toUpperCase().startsWith("PRESILHA");
+            return (
+                <div className="group bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-xl hover:border-blue-200 transition-all duration-300 flex flex-col h-full">
+                    <div className={`h-1.5 w-full ${product.category === 'Embutir' ? 'bg-orange-400' : product.category === 'Sobrepor' ? 'bg-blue-400' : 'bg-slate-400'}`}></div>
+                    <div className="p-5 flex-1 flex flex-col">
+                        <div className="flex justify-between items-start mb-3">
+                            <span className="bg-slate-100 text-slate-600 text-xs font-bold px-2 py-1 rounded uppercase tracking-wide">{product.id}</span>
+                            {product.boxQty > 1 && (
+                                <span className="flex items-center gap-1 text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-100">
+                                    <Package size={12} /> CX: {product.boxQty}un
+                                </span>
+                            )}
+                        </div>
+                        <h3 className="text-slate-800 font-medium leading-snug mb-2 flex-1 line-clamp-3 group-hover:text-blue-600 transition-colors">
+                            {product.desc.replace(/\(M\s?CX\d+\)/i, '')}
+                        </h3>
+                        {isPresilha && (
+                            <div className="mb-4 text-[11px] font-bold text-amber-700 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200 flex items-center gap-1.5">
+                                <AlertCircle size={12} className="flex-shrink-0" />
+                                <span>Valor referente ao pacote</span>
+                            </div>
+                        )}
+                        <div className="space-y-3 mt-auto">
+                            <div className="bg-slate-50 rounded-lg p-3 border border-slate-100 space-y-2">
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="text-slate-500">Unidade</span>
+                                    <span className="font-semibold text-slate-700">{formatBRL(product.priceFrac)}</span>
+                                </div>
+                                {product.boxQty > 1 && (
+                                    <div className="flex justify-between items-center text-sm">
+                                        <span className="text-blue-600 font-medium flex items-center gap-1">
+                                            <Tag size={12} />
+                                            Cx. Fechada
+                                            <span className="text-[10px] opacity-70">({product.boxQty}+)</span>
+                                        </span>
+                                        <span className="font-bold text-blue-700">{formatBRL(product.priceBox)}</span>
+                                    </div>
+                                )}
+                            </div>
+                            <button onClick={() => onAdd(product)} className="w-full bg-slate-900 text-white py-2.5 rounded-lg font-medium hover:bg-blue-600 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-sm">
+                                <Plus size={18} />
+                                Adicionar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
 
-  return (
-    <div className="group bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-xl hover:border-blue-200 transition-all duration-300 flex flex-col h-full">
-      {/* Header Color Strip - Could represent product type */}
-      <div className={`h-1.5 w-full ${product.category === 'Embutir' ? 'bg-orange-400' : product.category === 'Sobrepor' ? 'bg-blue-400' : 'bg-slate-400'}`}></div>
-      
-      <div className="p-5 flex-1 flex flex-col">
-        <div className="flex justify-between items-start mb-3">
-           <span className="bg-slate-100 text-slate-600 text-xs font-bold px-2 py-1 rounded uppercase tracking-wide">
-             {product.id}
-           </span>
-           {product.boxQty > 1 && (
-             <span className="flex items-center gap-1 text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-100">
-               <Package size={12} /> CX: {product.boxQty}un
-             </span>
-           )}
-        </div>
-
-        <h3 className="text-slate-800 font-medium leading-snug mb-2 flex-1 line-clamp-3 group-hover:text-blue-600 transition-colors">
-          {product.desc.replace(/\(M\s?CX\d+\)/i, '')} {/* Clean display name */}
-        </h3>
-
-        {isPresilha && (
-          <div className="mb-4 text-[11px] font-bold text-amber-700 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200 flex items-center gap-1.5">
-            <AlertCircle size={12} className="flex-shrink-0" />
-            <span>Valor referente ao pacote</span>
-          </div>
-        )}
-
-        <div className="space-y-3 mt-auto">
-          {/* Price Table */}
-          <div className="bg-slate-50 rounded-lg p-3 border border-slate-100 space-y-2">
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-slate-500">Unidade</span>
-              <span className="font-semibold text-slate-700">{formatBRL(product.priceFrac)}</span>
-            </div>
-            {product.boxQty > 1 && (
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-blue-600 font-medium flex items-center gap-1">
-                  <Tag size={12} />
-                  Cx. Fechada
-                  <span className="text-[10px] opacity-70">({product.boxQty}+)</span>
-                </span>
-                <span className="font-bold text-blue-700">{formatBRL(product.priceBox)}</span>
-              </div>
-            )}
-          </div>
-
-          <button 
-            onClick={() => onAdd(product)}
-            className="w-full bg-slate-900 text-white py-2.5 rounded-lg font-medium hover:bg-blue-600 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-sm"
-          >
-            <Plus size={18} />
-            Adicionar
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<LumilineCatalog />);
+    </script>
+</body>
+</html>
