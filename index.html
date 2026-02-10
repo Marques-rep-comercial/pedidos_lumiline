@@ -298,7 +298,7 @@
             const [cart, setCart] = useState([]);
             const [isCartOpen, setIsCartOpen] = useState(false);
             const [categoryFilter, setCategoryFilter] = useState("Todos");
-            const [showWhatsAppInstructions, setShowWhatsAppInstructions] = useState(false);
+            // const [showWhatsAppInstructions, setShowWhatsAppInstructions] = useState(false); // Removido pois não será mais usado o modal de instruções
 
             // Carregar jsPDF
             useEffect(() => {
@@ -439,15 +439,19 @@
                 doc.save(`Orcamento_Lumiline_${new Date().toISOString().slice(0,10)}.pdf`);
             };
 
-            const handleWhatsAppWithPDF = () => {
-                if (!window.jspdf) {
-                    alert("A biblioteca de PDF ainda está carregando. Tente novamente em alguns segundos.");
-                    return;
-                }
-                handleGeneratePDF();
-                const message = encodeURIComponent("Olá! Baixei o PDF do meu pedido e estou enviando em anexo para conferência.");
-                window.open(`https://wa.me/5581994645392?text=${message}`, '_blank');
-                setShowWhatsAppInstructions(true);
+            // Função para enviar pedido formatado em texto via WhatsApp
+            const handleWhatsAppCheckout = () => {
+                let message = "*Pedido - Catálogo Lumiline*\n\n";
+                
+                cart.forEach(item => {
+                    const { price } = getActivePrice(item, item.quantity);
+                    message += `• *${item.quantity}x* ${item.id}\n${item.desc.trim()}\nValor: ${formatBRL(price * item.quantity)}\n\n`;
+                });
+
+                message += `*Total Geral: ${formatBRL(cartTotals.subtotal)}*`;
+
+                const encodedMessage = encodeURIComponent(message);
+                window.open(`https://wa.me/5581994645392?text=${encodedMessage}`, '_blank');
             };
 
             return (
@@ -646,7 +650,7 @@
                                                     <FileText size={20} />
                                                     Baixar Orçamento (PDF)
                                                 </button>
-                                                <button onClick={handleWhatsAppWithPDF} className="w-full bg-green-500 text-white py-3.5 rounded-xl font-bold text-lg hover:bg-green-600 active:bg-green-700 transition-all shadow-lg shadow-green-200 flex items-center justify-center gap-2">
+                                                <button onClick={handleWhatsAppCheckout} className="w-full bg-green-500 text-white py-3.5 rounded-xl font-bold text-lg hover:bg-green-600 active:bg-green-700 transition-all shadow-lg shadow-green-200 flex items-center justify-center gap-2">
                                                     <MessageCircle size={24} />
                                                     Enviar Pedido (WhatsApp)
                                                 </button>
@@ -654,33 +658,6 @@
                                         </div>
                                     )}
                                 </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {showWhatsAppInstructions && (
-                        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-                            <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 space-y-4 animate-in fade-in zoom-in duration-200">
-                                <div className="text-center space-y-2">
-                                    <div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-green-600 mb-3">
-                                        <MessageCircle size={28} />
-                                    </div>
-                                    <h3 className="text-xl font-bold text-slate-900">Quase lá!</h3>
-                                    <p className="text-slate-500 text-sm">O PDF do pedido foi baixado automaticamente.</p>
-                                </div>
-                                <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 space-y-3">
-                                    <div className="flex items-start gap-3">
-                                        <div className="bg-blue-100 text-blue-700 rounded-full p-1 mt-0.5"><Download size={14} /></div>
-                                        <p className="text-sm text-slate-700">1. Verifique seus downloads: <b>Orcamento_Lumiline...pdf</b></p>
-                                    </div>
-                                    <div className="flex items-start gap-3">
-                                        <div className="bg-green-100 text-green-700 rounded-full p-1 mt-0.5"><Paperclip size={14} /></div>
-                                        <p className="text-sm text-slate-700">2. Na conversa do WhatsApp que abriu, clique no clipe (anexo) e envie este arquivo.</p>
-                                    </div>
-                                </div>
-                                <button onClick={() => setShowWhatsAppInstructions(false)} className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-slate-800 transition-colors">
-                                    Entendi, já enviei
-                                </button>
                             </div>
                         </div>
                     )}
